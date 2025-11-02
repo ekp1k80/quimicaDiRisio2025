@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "question": "¿Qué significa que la duplicación del ADN es semiconservativa?",
+        "options": [
+            {"text": "Una cadena se sintetiza continua y la otra discontinua", "isCorrect": false, "rationale": "Describe bidireccionalidad, no semiconservatividad."},
+            {"text": "Las moléculas hijas contienen mitad de información genética", "isCorrect": false, "rationale": "Error conceptual sobre contenido genético."},
+            {"text": "Cada molécula hija tiene una hebra original y una nueva", "isCorrect": true, "rationale": "Definición central (pág. 1, guía estudio pregunta 4)."},
+            {"text": "Requiere energía de nucleótidos trifosfatados", "isCorrect": false, "rationale": "Relacionado con energía, no estructura."}
+        ],
+        "hint": "Estructura de las moléculas hijas (pág. 1)"
+    },
+    {
+        "question": "¿Cuál es la función principal de la ADN polimerasa?",
+        "options": [
+            {"text": "Separar las hebras de ADN", "isCorrect": false, "rationale": "Función de la helicasa."},
+            {"text": "Sintetizar cebadores de ARN", "isCorrect": false, "rationale": "Función de la primasa."},
+            {"text": "Unir fragmentos de Okazaki", "isCorrect": false, "rationale": "Función de la ligasa."},
+            {"text": "Formar cadenas nuevas usando desoxirribonucleótidos", "isCorrect": true, "rationale": "Enzima clave en síntesis (pág. 1, actividad 4)."}
+        ],
+        "hint": "Sustratos: desoxirribonucleótidos trifosfatados (pág. 1)"
+    },
+    {
+        "question": "En el período S del ciclo celular ocurre:",
+        "options": [
+            {"text": "Aumento del tamaño celular", "isCorrect": false, "rationale": "Ocurre en G1 y G2."},
+            {"text": "Duplicación del ADN", "isCorrect": true, "rationale": "Evento central de fase S (pág. 3, guía estudio pregunta 1)."},
+            {"text": "Máxima compactación cromosómica", "isCorrect": false, "rationale": "Ocurre en mitosis."},
+            {"text": "División celular", "isCorrect": false, "rationale": "Fase M."}
+        ],
+        "hint": "Relación con contenido de ADN (pág. 3)"
+    },
+    {
+        "question": "¿Qué células humanas son haploides?",
+        "options": [
+            {"text": "Neuronas", "isCorrect": false, "rationale": "Somáticas diploides."},
+            {"text": "Espermatocitos primarios", "isCorrect": false, "rationale": "Diploides (2n)."},
+            {"text": "Óvulos", "isCorrect": true, "rationale": "Gametas femeninas haploides (pág. 10, actividad 8)."},
+            {"text": "Células epiteliales", "isCorrect": false, "rationale": "Somáticas diploides."}
+        ],
+        "hint": "Gametogénesis (pág. 10)"
+    },
+    {
+        "question": "La transcripción difiere de la replicación en que:",
+        "options": [
+            {"text": "Usa ribonucleótidos como sustratos", "isCorrect": true, "rationale": "Sustratos específicos (pág. 6, actividad 4)."},
+            {"text": "Requiere cebador de ARN", "isCorrect": false, "rationale": "Exclusivo de replicación."},
+            {"text": "Ocurre solo en eucariontes", "isCorrect": false, "rationale": "Ambos tipos celulares."},
+            {"text": "Produce moléculas idénticas al molde", "isCorrect": false, "rationale": "El ARN es complementario."}
+        ],
+        "hint": "Sustratos y productos (pág. 4)"
+    },
+    {
+        "question": "En la metafase mitótica de una célula 2n=46:",
+        "options": [
+            {"text": "Hay 46 cromosomas con 1 cromátida", "isCorrect": false, "rationale": "Cromosomas duplicados."},
+            {"text": "Hay 92 cromosomas con 1 cromátida", "isCorrect": false, "rationale": "Error en conteo."},
+            {"text": "Hay 46 cromosomas con 2 cromátidas", "isCorrect": true, "rationale": "Estructura típica (pág. 6, actividad 8)."},
+            {"text": "Se forman las cromátidas hermanas", "isCorrect": false, "rationale": "Ocurre en S."}
+        ],
+        "hint": "Número cromosomas/cromátidas (pág. 6)"
+    },
+    {
+        "question": "El crossing-over en meiosis genera variabilidad porque:",
+        "options": [
+            {"text": "Separa cromosomas homólogos al azar", "isCorrect": false, "rationale": "Anafase I."},
+            {"text": "Intercambia segmentos entre cromátidas no hermanas", "isCorrect": true, "rationale": "Recombinación (pág. 11, pregunta 7)."},
+            {"text": "Duplica el ADN previamente", "isCorrect": false, "rationale": "Fase S."},
+            {"text": "Produce mutaciones puntuales", "isCorrect": false, "rationale": "No es mutación."}
+        ],
+        "hint": "Profase I (pág. 7)"
+    },
+    {
+        "question": "¿Dónde se sintetizan los ARN ribosomales?",
+        "options": [
+            {"text": "Ribosomas citoplasmáticos", "isCorrect": false, "rationale": "Síntesis de proteínas."},
+            {"text": "Nucléolo", "isCorrect": true, "rationale": "Región nuclear especializada (pág. 2, guía estudio pregunta 4)."},
+            {"text": "Retículo endoplasmático rugoso", "isCorrect": false, "rationale": "Síntesis proteica."},
+            {"text": "Complejos de poro nuclear", "isCorrect": false, "rationale": "Transporte, no síntesis."}
+        ],
+        "hint": "Transcripción de genes específicos (pág. 2)"
+    },
+    {
+        "question": "En el código genético, 'degenerado' significa que:",
+        "options": [
+            {"text": "Un codón codifica múltiples aminoácidos", "isCorrect": false, "rationale": "No ambiguo."},
+            {"text": "Un aminoácido tiene varios codones", "isCorrect": true, "rationale": "Definición clave (pág. 7, actividad 10)."},
+            {"text": "Existen codones de parada", "isCorrect": false, "rationale": "No define degeneración."},
+            {"text": "Es universal en todos los organismos", "isCorrect": false, "rationale": "Otra característica."}
+        ],
+        "hint": "Relación codón-aminoácido (pág. 7)"
+    },
+    {
+        "question": "¿Qué elemento NO es sustrato en la traducción?",
+        "options": [
+            {"text": "ARN mensajero", "isCorrect": false, "rationale": "Molde necesario."},
+            {"text": "Aminoácidos", "isCorrect": false, "rationale": "Monómeros esenciales."},
+            {"text": "Ribosomas", "isCorrect": true, "rationale": "Maquinaria catalítica, no sustrato (pág. 7, actividad 4)."},
+            {"text": "ARN de transferencia", "isCorrect": false, "rationale": "Transporta aminoácidos."}
+        ],
+        "hint": "Componentes del proceso (pág. 5-6)"
+    },
+    {
+        "question": "En células humanas, ¿dónde ocurre la transcripción?",
+        "options": [
+            {"text": "Citoplasma", "isCorrect": false, "rationale": "Traducción."},
+            {"text": "Ribosomas", "isCorrect": false, "rationale": "Síntesis proteica."},
+            {"text": "Núcleo", "isCorrect": true, "rationale": "Localización específica (pág. 7, actividad 9)."},
+            {"text": "Mitocondrias", "isCorrect": false, "rationale": "Solo para genes mitocondriales."}
+        ],
+        "hint": "Organela con ADN (pág. 2)"
+    },
+    {
+        "question": "¿Qué enzima rompe puentes de hidrógeno durante la replicación?",
+        "options": [
+            {"text": "ADN polimerasa", "isCorrect": false, "rationale": "Sintetiza hebras."},
+            {"text": "Ligasa", "isCorrect": false, "rationale": "Une fragmentos."},
+            {"text": "Helicasa", "isCorrect": true, "rationale": "Separa hebras (pág. 2, actividad 5)."},
+            {"text": "Primasa", "isCorrect": false, "rationale": "Sintetiza cebador."}
+        ],
+        "hint": "Apertura de horquilla (pág. 1)"
+    },
+    {
+        "question": "En G2 de una célula 2n=46, ¿cuántas moléculas de ADN hay?",
+        "options": [
+            {"text": "46", "isCorrect": false, "rationale": "Número en G1."},
+            {"text": "92", "isCorrect": true, "rationale": "ADN duplicado (pág. 6, actividad 7)."},
+            {"text": "23", "isCorrect": false, "rationale": "Número haploide."},
+            {"text": "184", "isCorrect": false, "rationale": "Exceso."}
+        ],
+        "hint": "Relación cromosomas/moléculas ADN (pág. 6)"
+    },
+    {
+        "question": "¿Qué evento de meiosis explica la ley de segregación independiente?",
+        "options": [
+            {"text": "Crossing-over", "isCorrect": false, "rationale": "Recombinación."},
+            {"text": "Separación de cromátidas hermanas", "isCorrect": false, "rationale": "Mitosis y meiosis II."},
+            {"text": "Distribución al azar de homólogos en anafase I", "isCorrect": true, "rationale": "Segregación independiente (pág. 11, pregunta 7)."},
+            {"text": "Formación del complejo sinaptonémico", "isCorrect": false, "rationale": "Apareamiento."}
+        ],
+        "hint": "Anafase I (pág. 7)"
+    },
+    {
+        "question": "El splicing alternativo contribuye a la diferenciación celular porque:",
+        "options": [
+            {"text": "Duplica genes esenciales", "isCorrect": false, "rationale": "No duplicación."},
+            {"text": "Genera múltiples ARNm desde un gen", "isCorrect": true, "rationale": "Diversidad proteica (pág. 8, actividad 1)."},
+            {"text": "Degrada ARN no funcional", "isCorrect": false, "rationale": "Control calidad."},
+            {"text": "Traduce proteínas directamente", "isCorrect": false, "rationale": "Proceso post-transcripcional."}
+        ],
+        "hint": "Procesamiento del ARNm (pág. 4)"
+    },
+    {
+        "question": "¿Qué característica comparten transcripción y replicación?",
+        "options": [
+            {"text": "Ocurren en citoplasma", "isCorrect": false, "rationale": "Transcripción nuclear."},
+            {"text": "Usan ADN como molde", "isCorrect": true, "rationale": "Base molecular (pág. 1 y 4)."},
+            {"text": "Producen proteínas", "isCorrect": false, "rationale": "Solo traducción."},
+            {"text": "Requieren ribosomas", "isCorrect": false, "rationale": "Traducción."}
+        ],
+        "hint": "Molde común (pág. 1 y 4)"
+    },
+    {
+        "question": "En telofase II de meiosis, una célula humana tiene:",
+        "options": [
+            {"text": "46 cromosomas duplicados", "isCorrect": false, "rationale": "Diploide."},
+            {"text": "23 cromosomas con 1 cromátida", "isCorrect": true, "rationale": "Gametas haploides (pág. 8, actividad 3)."},
+            {"text": "23 cromosomas con 2 cromátidas", "isCorrect": false, "rationale": "Después de meiosis I."},
+            {"text": "46 cromosomas simples", "isCorrect": false, "rationale": "Diploide no duplicado."}
+        ],
+        "hint": "Producto final meiosis (pág. 10)"
+    },
+    {
+        "question": "¿Qué elemento debe estar presente para replicación in vitro?",
+        "options": [
+            {"text": "Ribonucleótidos trifosfatados", "isCorrect": false, "rationale": "Transcripción."},
+            {"text": "ARN polimerasa", "isCorrect": false, "rationale": "Enzima transcripción."},
+            {"text": "Desoxirribonucleótidos trifosfatados", "isCorrect": true, "rationale": "Sustratos esenciales (pág. 1, actividad 3)."},
+            {"text": "Aminoácidos activados", "isCorrect": false, "rationale": "Traducción."}
+        ],
+        "hint": "Requisitos experimentales (pág. 1)"
+    },
+    {
+        "question": "La regulación del ciclo celular es crucial para:",
+        "options": [
+            {"text": "Aumentar tamaño celular", "isCorrect": false, "rationale": "Función secundaria."},
+            {"text": "Prevenir cáncer", "isCorrect": true, "rationale": "Evita división descontrolada (pág. 3, guía estudio pregunta 5)."},
+            {"text": "Sintetizar histonas", "isCorrect": false, "rationale": "Evento específico."},
+            {"text": "Formar huso mitótico", "isCorrect": false, "rationale": "Parte de mitosis."}
+        ],
+        "hint": "Consecuencias de fallos (pág. 3)"
+    },
+    {
+        "question": "En eucromatina, los genes están:",
+        "options": [
+            {"text": "Silenciados permanentemente", "isCorrect": false, "rationale": "Heterocromatina."},
+            {"text": "Asociados a histonas acetiladas", "isCorrect": true, "rationale": "Acceso transcripcional (pág. 3, guía estudio pregunta 3)."},
+            {"text": "Localizados en el nucléolo", "isCorrect": false, "rationale": "Contiene genes ribosomales."},
+            {"text": "En proceso de replicación", "isCorrect": false, "rationale": "No exclusivo."}
+        ],
+        "hint": "Estado transcripcional (pág. 2)"
+    },
+    {
+        "question": "¿Qué proceso requiere aminoacil-ARNt sintetasa?",
+        "options": [
+            {"text": "Transcripción", "isCorrect": false, "rationale": "ARN polimerasa."},
+            {"text": "Replicación", "isCorrect": false, "rationale": "ADN polimerasa."},
+            {"text": "Activación de aminoácidos", "isCorrect": true, "rationale": "Traducción (pág. 5, guía estudio pregunta 4)."},
+            {"text": "Splicing", "isCorrect": false, "rationale": "Procesamiento ARN."}
+        ],
+        "hint": "Traducción: etapa previa (pág. 5)"
+    },
+    {
+        "question": "En mitosis, la separación de cromátidas hermanas ocurre en:",
+        "options": [
+            {"text": "Profase", "isCorrect": false, "rationale": "Condensación."},
+            {"text": "Metafase", "isCorrect": false, "rationale": "Alineación."},
+            {"text": "Anafase", "isCorrect": true, "rationale": "Evento clave (pág. 6, actividad 8)."},
+            {"text": "Telofase", "isCorrect": false, "rationale": "Descondensación."}
+        ],
+        "hint": "Fase de migración (pág. 5)"
+    },
+    {
+        "question": "Un cariotipo humano normal muestra:",
+        "options": [
+            {"text": "23 pares de autosomas", "isCorrect": false, "rationale": "22 pares autosomas + sexuales."},
+            {"text": "46 cromosomas homólogos", "isCorrect": false, "rationale": "23 pares homólogos."},
+            {"text": "46 cromosomas totales", "isCorrect": true, "rationale": "Diploide 2n=46 (pág. 4, actividad 1)."},
+            {"text": "XX en hombres", "isCorrect": false, "rationale": "Mujeres XX, hombres XY."}
+        ],
+        "hint": "Complemento cromosómico (pág. 4)"
+    },
+    {
+        "question": "¿Qué enzima corrige errores durante la replicación?",
+        "options": [
+            {"text": "ADN polimerasa", "isCorrect": true, "rationale": "Función exonucleasa (pág. 1, guía estudio)."},
+            {"text": "Helicasa", "isCorrect": false, "rationale": "Solo abre hebras."},
+            {"text": "Topoisomerasa", "isCorrect": false, "rationale": "Alivia tensión."},
+            {"text": "Ligasa", "isCorrect": false, "rationale": "Une fragmentos."}
+        ],
+        "hint": "Revisión (pág. 1)"
+    },
+    {
+        "question": "En ovogénesis humana, por cada ovocito I se producen:",
+        "options": [
+            {"text": "4 óvulos funcionales", "isCorrect": false, "rationale": "Solo 1 óvulo (pág. 12, actividad 13)."},
+            {"text": "1 óvulo y 3 cuerpos polares", "isCorrect": true, "rationale": "Asimetría (pág. 10, actividad 8)."},
+            {"text": "2 ovocitos II", "isCorrect": false, "rationale": "Solo 1 ovocito II."},
+            {"text": "4 células haploides idénticas", "isCorrect": false, "rationale": "No en mujeres."}
+        ],
+        "hint": "Diferencias con espermatogénesis (pág. 10)"
+    },
+    {
+        "question": "El codón AUG codifica para:",
+        "options": [
+            {"text": "Glicina", "isCorrect": false, "rationale": "GGU/GGC/GGA/GGG."},
+            {"text": "Serina", "isCorrect": false, "rationale": "UCU/UCC/UCA/UCG."},
+            {"text": "Inicio y metionina", "isCorrect": true, "rationale": "Función dual (pág. 7, actividad 10)."},
+            {"text": "Parada", "isCorrect": false, "rationale": "UAA/UAG/UGA."}
+        ],
+        "hint": "Código genético (pág. 7)"
+    },
+    {
+        "question": "¿Qué caracteriza a la heterocromatina?",
+        "options": [
+            {"text": "Alta transcripción génica", "isCorrect": false, "rationale": "Eucromatina."},
+            {"text": "ADN descondensado", "isCorrect": false, "rationale": "Eucromatina."},
+            {"text": "Genes silenciados", "isCorrect": true, "rationale": "Compactación (pág. 2, guía estudio pregunta 3)."},
+            {"text": "Localización exclusiva en nucléolo", "isCorrect": false, "rationale": "No exclusiva."}
+        ],
+        "hint": "Estado de compactación (pág. 2)"
+    },
+    {
+        "question": "Durante la elongación en traducción:",
+        "options": [
+            {"text": "Se une el ARNm al ribosoma", "isCorrect": false, "rationale": "Iniciación."},
+            {"text": "Actúa la peptidil transferasa", "isCorrect": true, "rationale": "Forma enlaces peptídicos (pág. 7, actividad 10)."},
+            {"text": "Se libera el factor de terminación", "isCorrect": false, "rationale": "Terminación."},
+            {"text": "Se activan aminoácidos", "isCorrect": false, "rationale": "Previo a traducción."}
+        ],
+        "hint": "Alargamiento de cadena (pág. 5)"
+    },
+    {
+        "question": "La fase G0 del ciclo celular se define como:",
+        "options": [
+            {"text": "Síntesis de ADN", "isCorrect": false, "rationale": "Fase S."},
+            {"text": "División celular", "isCorrect": false, "rationale": "Fase M."},
+            {"text": "Estado de reposo reversible", "isCorrect": true, "rationale": "Células quiescentes (pág. 3, guía estudio pregunta 3)."},
+            {"text": "Preparación para mitosis", "isCorrect": false, "rationale": "G2."}
+        ],
+        "hint": "Ejemplos: neuronas (pág. 3)"
+    },
+    {
+        "question": "En procariotas, la transcripción y traducción:",
+        "options": [
+            {"text": "Ocurren en núcleo", "isCorrect": false, "rationale": "No tienen núcleo."},
+            {"text": "Son simultáneas", "isCorrect": true, "rationale": "Ausencia de compartimentos (pág. 4, guía estudio pregunta 7)."},
+            {"text": "Requieren maduración de ARNm", "isCorrect": false, "rationale": "Típico de eucariotas."},
+            {"text": "Usan diferentes ARN polimerasas", "isCorrect": false, "rationale": "Solo un tipo."}
+        ],
+        "hint": "Diferencias eucariotas-procariotas (pág. 4)"
+    },
+    {
+        "question": "Los telómeros protegen los cromosomas porque:",
+        "options": [
+            {"text": "Codifican proteínas esenciales", "isCorrect": false, "rationale": "No codificantes."},
+            {"text": "Evitan pérdida de genes en replicación", "isCorrect": true, "rationale": "Acortamiento controlado (pág. 2, actividad 5)."},
+            {"text": "Sintetizan ADN polimerasa", "isCorrect": false, "rationale": "No enzimáticos."},
+            {"text": "Forman el complejo sinaptonémico", "isCorrect": false, "rationale": "Meiosis."}
+        ],
+        "hint": "ADN repetitivo terminal (pág. 2)"
+    },
+    {
+        "question": "¿Qué sucede si falla la ligasa en replicación?",
+        "options": [
+            {"text": "No se abre la horquilla", "isCorrect": false, "rationale": "Helicasa."},
+            {"text": "Fragmentos de Okazaki no se unen", "isCorrect": true, "rationale": "Función específica (pág. 1, actividad 4)."},
+            {"text": "Errores en cebadores", "isCorrect": false, "rationale": "Primasa."},
+            {"text": "Sobrecarga de ADN polimerasa", "isCorrect": false, "rationale": "No directo."}
+        ],
+        "hint": "Cadena retardada (pág. 1)"
+    },
+    {
+        "question": "Una mutación en una gameta humana afecta:",
+        "options": [
+            {"text": "Solo al individuo", "isCorrect": false, "rationale": "Células somáticas."},
+            {"text": "La línea germinal", "isCorrect": false, "rationale": "Gametas no son línea germinal."},
+            {"text": "Posible descendencia", "isCorrect": true, "rationale": "Transmisión hereditaria (pág. 10, actividad 12)."},
+            {"text": "Ninguna opción", "isCorrect": false, "rationale": "Hay efecto."}
+        ],
+        "hint": "Herencia (pág. 10)"
+    },
+    {
+        "question": "En el nucléolo se ensamblan:",
+        "options": [
+            {"text": "Ribosomas completos", "isCorrect": false, "rationale": "Solo subunidades."},
+            {"text": "Subunidades ribosomales", "isCorrect": true, "rationale": "Función principal (pág. 2, guía estudio pregunta 4)."},
+            {"text": "Complejos de poro nuclear", "isCorrect": false, "rationale": "Envoltura nuclear."},
+            {"text": "Cromatina", "isCorrect": false, "rationale": "Nucleoplasma."}
+        ],
+        "hint": "Componentes ribosomales (pág. 2)"
+    },
+    {
+        "question": "La anafase I de meiosis se caracteriza por:",
+        "options": [
+            {"text": "Separación de cromátidas hermanas", "isCorrect": false, "rationale": "Anafase II/mitosis."},
+            {"text": "Migración de homólogos a polos", "isCorrect": true, "rationale": "Reducción ploidía (pág. 7, guía estudio pregunta 2)."},
+            {"text": "Formación de quiasmas", "isCorrect": false, "rationale": "Profase I."},
+            {"text": "Duplicación cromosómica", "isCorrect": false, "rationale": "Interfase previa."}
+        ],
+        "hint": "Reducción a haploide (pág. 7)"
+    },
+    {
+        "question": "Los fragmentos de Okazaki son propios de:",
+        "options": [
+            {"text": "Síntesis continua", "isCorrect": false, "rationale": "Cadena conductora."},
+            {"text": "Síntesis discontinua", "isCorrect": true, "rationale": "Cadena retardada (pág. 2, actividad 3)."},
+            {"text": "Transcripción", "isCorrect": false, "rationale": "Replicación."},
+            {"text": "Traducción", "isCorrect": false, "rationale": "Síntesis proteica."}
+        ],
+        "hint": "Replicación: enzimas involucradas (pág. 1)"
+    },
+    {
+        "question": "La diferenciación celular implica cambios en:",
+        "options": [
+            {"text": "Secuencia de ADN", "isCorrect": false, "rationale": "Genoma constante."},
+            {"text": "Expresión génica", "isCorrect": true, "rationale": "Regulación (pág. 8, guía estudio pregunta 2)."},
+            {"text": "Número de cromosomas", "isCorrect": false, "rationale": "Ploidía constante."},
+            {"text": "Tipo de código genético", "isCorrect": false, "rationale": "Universal."}
+        ],
+        "hint": "Ejemplo: hepatocito vs neurona (pág. 8)"
+    },
+    {
+        "question": "En eucariotas, el ARNm maduro contiene:",
+        "options": [
+            {"text": "Intrones y exones", "isCorrect": false, "rationale": "Pre-mARN."},
+            {"text": "Solo intrones", "isCorrect": false, "rationale": "Eliminados."},
+            {"text": "Solo exones", "isCorrect": true, "rationale": "Splicing (pág. 4, actividad 5)."},
+            {"text": "Secuencias de histonas", "isCorrect": false, "rationale": "Proteínas."}
+        ],
+        "hint": "Maduración post-transcripcional (pág. 4)"
+    },
+    {
+        "question": "¿Qué evento NO ocurre en profase mitótica?",
+        "options": [
+            {"text": "Condensación cromosómica", "isCorrect": false, "rationale": "Sí ocurre."},
+            {"text": "Formación de huso", "isCorrect": false, "rationale": "Sí ocurre."},
+            {"text": "Desintegración de envoltura nuclear", "isCorrect": false, "rationale": "Tardía en profase."},
+            {"text": "Apareamiento de homólogos", "isCorrect": true, "rationale": "Exclusivo de meiosis (pág. 11, actividad 5)."}
+        ],
+        "hint": "Diferencias con meiosis (pág. 7)"
+    },
+    {
+        "question": "La espermatogénesis humana comienza en:",
+        "options": [
+            {"text": "Vida intrauterina", "isCorrect": false, "rationale": "Ovogénesis."},
+            {"text": "Nacimiento", "isCorrect": false, "rationale": "No."},
+            {"text": "Pubertad", "isCorrect": true, "rationale": "Activación hormonal (pág. 12, actividad 12)."},
+            {"text": "Edad adulta", "isCorrect": false, "rationale": "Antes."}
+        ],
+        "hint": "Diferencias con ovogénesis (pág. 10)"
+    },
+    {
+        "question": "En células somáticas de ratón (2n=40), en G2 hay:",
+        "options": [
+            {"text": "40 cromosomas, 40 moléculas ADN", "isCorrect": false, "rationale": "G1."},
+            {"text": "40 cromosomas, 80 moléculas ADN", "isCorrect": true, "rationale": "ADN duplicado (pág. 6, actividad 8)."},
+            {"text": "80 cromosomas, 80 moléculas ADN", "isCorrect": false, "rationale": "Error ploidía."},
+            {"text": "80 cromosomas, 40 moléculas ADN", "isCorrect": false, "rationale": "Sin sentido."}
+        ],
+        "hint": "Relación cromosomas/moléculas ADN (pág. 6)"
+    },
+    {
+        "question": "La función del complejo sinaptonémico es:",
+        "options": [
+            {"text": "Separar cromátidas hermanas", "isCorrect": false, "rationale": "Anafase."},
+            {"text": "Mantener apareamiento de homólogos", "isCorrect": true, "rationale": "Profase I (pág. 7, guía estudio pregunta 3)."},
+            {"text": "Sintetizar ARN cebador", "isCorrect": false, "rationale": "Primasa."},
+            {"text": "Unir fragmentos de Okazaki", "isCorrect": false, "rationale": "Ligasa."}
+        ],
+        "hint": "Estructura meiótica (pág. 7)"
+    },
+    {
+        "question": "¿Qué enzima requiere un molde de ADN?",
+        "options": [
+            {"text": "Peptidil transferasa", "isCorrect": false, "rationale": "Traducción (ARN)."},
+            {"text": "Aminoacil-ARNt sintetasa", "isCorrect": false, "rationale": "Activa aa sin molde."},
+            {"text": "ARN polimerasa", "isCorrect": true, "rationale": "Transcripción (pág. 4, guía estudio pregunta 5)."},
+            {"text": "Rubisco", "isCorrect": false, "rationale": "Fotosíntesis."}
+        ],
+        "hint": "Síntesis de ácidos nucleicos (pág. 4)"
+    },
+    {
+        "question": "En una célula 2n=8 en metafase mitótica hay:",
+        "options": [
+            {"text": "8 cromosomas con 1 cromátida", "isCorrect": false, "rationale": "G1."},
+            {"text": "8 cromosomas con 2 cromátidas", "isCorrect": true, "rationale": "Estructura duplicada (pág. 6, actividad 8)."},
+            {"text": "16 cromosomas con 1 cromátida", "isCorrect": false, "rationale": "Telofase."},
+            {"text": "4 cromosomas con 4 cromátidas", "isCorrect": false, "rationale": "Sin sentido."}
+        ],
+        "hint": "Número cromosomas/cromátidas (pág. 6)"
+    },
+    {
+        "question": "La fecundación restaura:",
+        "options": [
+            {"text": "El número haploide", "isCorrect": false, "rationale": "Restaura diploide."},
+            {"text": "El número diploide", "isCorrect": true, "rationale": "Unión gametas (pág. 10, actividad 9)."},
+            {"text": "La fase G0", "isCorrect": false, "rationale": "Cigota activa."},
+            {"text": "La cantidad de ADN de gametas", "isCorrect": false, "rationale": "Duplica ADN."}
+        ],
+        "hint": "Cigota (pág. 10)"
+    },
+    {
+        "question": "En el tubo con ARNm humano, aminoácidos y ribosomas de rata:",
+        "options": [
+            {"text": "Se sintetiza insulina humana", "isCorrect": true, "rationale": "Código universal (pág. 6, actividad 6)."},
+            {"text": "Solo se sintetizan proteínas de rata", "isCorrect": false, "rationale": "Molde humano."},
+            {"text": "No ocurre traducción", "isCorrect": false, "rationale": "Componentes completos."},
+            {"text": "Se producen mutaciones", "isCorrect": false, "rationale": "No aplica."}
+        ],
+        "hint": "Universalidad código genético (pág. 6)"
+    },
+    {
+        "question": "Las neuronas adultas están principalmente en:",
+        "options": [
+            {"text": "Fase S", "isCorrect": false, "rationale": "Síntesis ADN."},
+            {"text": "Fase G2", "isCorrect": false, "rationale": "Preparación división."},
+            {"text": "Fase G0", "isCorrect": true, "rationale": "Quiescencia (pág. 3, actividad 6)."},
+            {"text": "División mitótica", "isCorrect": false, "rationale": "No se dividen."}
+        ],
+        "hint": "Células diferenciadas (pág. 3)"
+    },
+    {
+        "question": "¿Qué proceso es endergónico?",
+        "options": [
+            {"text": "Glucólisis", "isCorrect": false, "rationale": "Produce ATP."},
+            {"text": "Replicación del ADN", "isCorrect": true, "rationale": "Requiere energía (pág. 1, guía estudio pregunta 2)."},
+            {"text": "Catabolismo de lípidos", "isCorrect": false, "rationale": "Libera energía."},
+            {"text": "Difusión simple", "isCorrect": false, "rationale": "Pasivo."}
+        ],
+        "hint": "Sustratos trifosfatados (pág. 1)"
+    },
+    {
+        "question": "La separación al azar de cromátidas recombinantes ocurre en:",
+        "options": [
+            {"text": "Anafase I de meiosis", "isCorrect": false, "rationale": "Separación homólogos."},
+            {"text": "Anafase II de meiosis", "isCorrect": true, "rationale": "Como mitosis (pág. 11, actividad 14)."},
+            {"text": "Profase I", "isCorrect": false, "rationale": "Crossing-over."},
+            {"text": "Metafase mitótica", "isCorrect": false, "rationale": "Alineación."}
+        ],
+        "hint": "Segunda división meiótica (pág. 7)"
+    },
+    {
+        "question": "Un espermatozoide humano contiene:",
+        "options": [
+            {"text": "23 cromosomas duplicados", "isCorrect": false, "rationale": "Cromosomas simples."},
+            {"text": "46 cromosomas simples", "isCorrect": false, "rationale": "Diploide."},
+            {"text": "23 cromosomas simples", "isCorrect": true, "rationale": "Haploide (pág. 10, actividad 8)."},
+            {"text": "46 moléculas de ADN", "isCorrect": false, "rationale": "23 moléculas."}
+        ],
+        "hint": "Gametogénesis masculina (pág. 10)"
+    },
+    {
+        "question": "En el proceso de traducción, los codones se leen en dirección:",
+        "options": [
+            {"text": "5' → 3'", "isCorrect": true, "rationale": "Misma dirección ARNm (pág. 7, actividad 10)."},
+            {"text": "3' → 5'", "isCorrect": false, "rationale": "Dirección molde ADN."},
+            {"text": "N → C terminal", "isCorrect": false, "rationale": "Dirección síntesis proteica."},
+            {"text": "Variable", "isCorrect": false, "rationale": "Siempre 5'→3'."}
+        ],
+        "hint": "Síntesis proteica (pág. 5)"
+    }
+]
+    
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>
