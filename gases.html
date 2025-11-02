@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "Excepto en las colisiones, ¿cómo son las fuerzas de interacción entre las partículas de los gases?",
+    "options": [
+      {"text": "Intensas y atractivas, responsables de la cohesión del gas", "isCorrect": false, "rationale": "Eso describe líquidos o sólidos, no gases ideales."},
+      {"text": "Nulas, salvo durante el choque entre partículas", "isCorrect": true, "rationale": "En un gas ideal se asume que no existen fuerzas intermoleculares fuera de las colisiones."},
+      {"text": "Repulsivas permanentes por el movimiento térmico", "isCorrect": false, "rationale": "No hay repulsión constante; solo contactos momentáneos."},
+      {"text": "Atractivas débiles que disminuyen con la temperatura", "isCorrect": false, "rationale": "Eso ocurre en gases reales, no en el modelo ideal."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Hay pérdida de energía entre las colisiones de las partículas de los gases?",
+    "options": [
+      {"text": "Sí, por rozamiento molecular", "isCorrect": false, "rationale": "En el modelo ideal no se considera fricción."},
+      {"text": "No, las colisiones son elásticas y se conserva la energía total", "isCorrect": true, "rationale": "La elasticidad de los choques garantiza conservación de energía cinética total."},
+      {"text": "Sí, pero solo si la presión es muy alta", "isCorrect": false, "rationale": "La presión no altera la conservación energética ideal."},
+      {"text": "Depende de la temperatura y el tipo de gas", "isCorrect": false, "rationale": "En la teoría cinética ideal no depende del tipo de gas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿La energía de las partículas de los gases a qué es directamente proporcional?",
+    "options": [
+      {"text": "A la masa molar del gas", "isCorrect": false, "rationale": "La energía promedio no depende de la masa, sino de la temperatura."},
+      {"text": "A la temperatura absoluta", "isCorrect": true, "rationale": "La energía cinética media ∝ T (en kelvin)."},
+      {"text": "A la presión total del sistema", "isCorrect": false, "rationale": "La presión depende también del volumen y número de partículas."},
+      {"text": "Al número de Avogadro", "isCorrect": false, "rationale": "Ese número solo escala cantidades, no afecta proporcionalidad directa."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué dice la hipótesis de Avogadro?",
+    "options": [
+      {"text": "A igual presión y temperatura, los gases con distinta masa tienen igual densidad", "isCorrect": false, "rationale": "La densidad depende de la masa molar."},
+      {"text": "A igual volumen y presión, todos los gases tienen igual masa", "isCorrect": false, "rationale": "La masa varía con la naturaleza del gas."},
+      {"text": "A igual presión y temperatura, volúmenes iguales de gases contienen igual número de moléculas", "isCorrect": true, "rationale": "Es la formulación original de Avogadro."},
+      {"text": "La presión de un gas es proporcional a su masa molar", "isCorrect": false, "rationale": "No hay tal relación directa."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la ecuación de los gases ideales?",
+    "options": [
+      {"text": "P·V = n·R·T", "isCorrect": true, "rationale": "Relación fundamental entre presión, volumen, cantidad de sustancia y temperatura."},
+      {"text": "P·V = m·R·T", "isCorrect": false, "rationale": "Debe usarse número de moles, no masa."},
+      {"text": "P/T = V/n·R", "isCorrect": false, "rationale": "Despeje incorrecto y unidades inconsistentes."},
+      {"text": "P + V = nRT", "isCorrect": false, "rationale": "Error de forma: la ecuación es producto, no suma."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuándo se puede aplicar la ecuación de los gases ideales a los gases reales?",
+    "options": [
+      {"text": "A altas presiones y bajas temperaturas", "isCorrect": false, "rationale": "En esas condiciones se desvían del comportamiento ideal."},
+      {"text": "A bajas presiones y altas temperaturas", "isCorrect": true, "rationale": "Allí las fuerzas intermoleculares y volumen propio son despreciables."},
+      {"text": "Solo cuando el gas es monoatómico", "isCorrect": false, "rationale": "No depende del tipo de molécula, sino de las condiciones."},
+      {"text": "Nunca, los gases reales siempre requieren corrección", "isCorrect": false, "rationale": "Se aproxima bien en condiciones ideales."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la ecuación de los gases para un proceso isobárico?",
+    "options": [
+      {"text": "V/T = constante", "isCorrect": true, "rationale": "Ley de Charles: a presión constante, V ∝ T."},
+      {"text": "P/T = constante", "isCorrect": false, "rationale": "Eso describe un proceso isocórico."},
+      {"text": "P·V = constante", "isCorrect": false, "rationale": "Eso es isotérmico."},
+      {"text": "P/V = constante", "isCorrect": false, "rationale": "No representa ninguna de las leyes básicas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la ecuación de los gases para un proceso isocórico?",
+    "options": [
+      {"text": "P/T = constante", "isCorrect": true, "rationale": "Ley de Gay-Lussac: a volumen constante, la presión ∝ temperatura."},
+      {"text": "V/T = constante", "isCorrect": false, "rationale": "Eso ocurre a presión constante."},
+      {"text": "P·V = constante", "isCorrect": false, "rationale": "Ley de Boyle, isotérmica."},
+      {"text": "P/V = constante", "isCorrect": false, "rationale": "No corresponde a un proceso físico real simple."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la ecuación de los gases para un proceso isotérmico?",
+    "options": [
+      {"text": "P·V = constante", "isCorrect": true, "rationale": "Ley de Boyle-Mariotte: T constante, producto P·V constante."},
+      {"text": "V/T = constante", "isCorrect": false, "rationale": "Eso describe un proceso isobárico."},
+      {"text": "P/T = constante", "isCorrect": false, "rationale": "Eso describe un proceso isocórico."},
+      {"text": "n/T = constante", "isCorrect": false, "rationale": "No existe relación directa así en la ley de gases."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos pascales equivale un torr?",
+    "options": [
+      {"text": "101325 Pa", "isCorrect": false, "rationale": "Eso equivale a una atmósfera completa."},
+      {"text": "133.322 Pa", "isCorrect": true, "rationale": "1 Torr = 1 mmHg = 133.322 Pa."},
+      {"text": "1.01325 Pa", "isCorrect": false, "rationale": "Error por factor de 10^5."},
+      {"text": "760 Pa", "isCorrect": false, "rationale": "Esa cifra corresponde a la proporción inversa."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos pascales equivale un hectopascal (hPa)?",
+    "options": [
+      {"text": "100 Pa", "isCorrect": true, "rationale": "1 hPa = 100 Pa (prefijo hecto = 10²)."},
+      {"text": "1000 Pa", "isCorrect": false, "rationale": "Ese valor corresponde a 1 kPa."},
+      {"text": "10 Pa", "isCorrect": false, "rationale": "Subestimación por un orden de magnitud."},
+      {"text": "1 Pa", "isCorrect": false, "rationale": "Demasiado bajo."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos pascales equivalen un milímetro y un centímetro de mercurio (mmHg y cmHg)?",
+    "options": [
+      {"text": "133.322 Pa y 1333.22 Pa respectivamente", "isCorrect": true, "rationale": "1 mmHg = 133.322 Pa; 1 cmHg = 10× más."},
+      {"text": "101325 Pa y 760 Pa", "isCorrect": false, "rationale": "Valores mezclados con atmósferas y torr."},
+      {"text": "1000 Pa y 100 Pa", "isCorrect": false, "rationale": "Redondeos incorrectos."},
+      {"text": "1.01325×10⁵ Pa ambos", "isCorrect": false, "rationale": "Ese valor es para 1 atm, no mmHg."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos pascales equivale una atmósfera?",
+    "options": [
+      {"text": "101325 Pa", "isCorrect": true, "rationale": "Valor estándar de 1 atm a nivel del mar."},
+      {"text": "133.322 Pa", "isCorrect": false, "rationale": "Eso equivale a 1 mmHg."},
+      {"text": "76000 Pa", "isCorrect": false, "rationale": "Error por confusión con 760 mmHg."},
+      {"text": "100000 Pa exactos", "isCorrect": false, "rationale": "Aproximación usada en meteorología (1 bar)."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos litros son 10 decímetros cúbicos?",
+    "options": [
+      {"text": "10 L", "isCorrect": true, "rationale": "1 dm³ = 1 L, equivalencia directa."},
+      {"text": "1 L", "isCorrect": false, "rationale": "Equivale a 1 dm³, no 10 dm³."},
+      {"text": "100 L", "isCorrect": false, "rationale": "Exceso por factor 10."},
+      {"text": "0.1 L", "isCorrect": false, "rationale": "Falla de escala inversa."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuántos kelvin equivalen a 0 °C?",
+    "options": [
+      {"text": "273.15 K", "isCorrect": true, "rationale": "Escala Kelvin se define desplazando 273.15 unidades desde °C."},
+      {"text": "0 K", "isCorrect": false, "rationale": "0 K es el cero absoluto."},
+      {"text": "100 K", "isCorrect": false, "rationale": "Equivale aproximadamente a −173 °C."},
+      {"text": "32 K", "isCorrect": false, "rationale": "Confusión con grados Fahrenheit."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es el número de Avogadro?",
+    "options": [
+      {"text": "6.022 × 10²³ mol⁻¹", "isCorrect": true, "rationale": "Constante universal que relaciona cantidad de sustancia con partículas."},
+      {"text": "3.00 × 10⁸ mol⁻¹", "isCorrect": false, "rationale": "Ese valor corresponde a la velocidad de la luz."},
+      {"text": "9.81 × 10²³ mol⁻¹", "isCorrect": false, "rationale": "Confusión con g o aceleración gravitatoria."},
+      {"text": "1.602 × 10⁻¹⁹ mol⁻¹", "isCorrect": false, "rationale": "Valor de la carga elemental del electrón."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Un recipiente con tapa móvil contiene una sustancia gaseosa a cierta presión y temperatura. Si se disminuye la temperatura del sistema a presión constante, indicar qué ocurrirá con la densidad del gas:",
+    "options": [
+      {"text": "Aumentará", "isCorrect": true, "rationale": "A menor temperatura (y misma presión), el volumen disminuye, aumentando la densidad."},
+      {"text": "Disminuirá", "isCorrect": false, "rationale": "Ocurre lo contrario: el gas se comprime."},
+      {"text": "No cambiará", "isCorrect": false, "rationale": "El cambio de T modifica el volumen, por ende la densidad."},
+      {"text": "No puede saberse con la información dada", "isCorrect": false, "rationale": "Se conoce el tipo de proceso: presión constante."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Un recipiente rígido contiene N₂(g) a cierta temperatura y presión. Si se agrega O₂(g) manteniendo la temperatura constante, ¿qué ocurre en el sistema final?",
+    "options": [
+      {"text": "La presión total aumenta", "isCorrect": true, "rationale": "En volumen fijo y T constante, más moles implican mayor presión total."},
+      {"text": "La fracción molar del N₂ no varía", "isCorrect": false, "rationale": "Disminuye, ya que aumenta el número total de moles."},
+      {"text": "La presión parcial del N₂ no varía", "isCorrect": false, "rationale": "La presión parcial de N₂ se mantiene igual solo si no cambian sus moles; aquí el total de presión sube."},
+      {"text": "La densidad del sistema disminuye", "isCorrect": false, "rationale": "Al agregar gas, la masa total aumenta, incrementando la densidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Un recipiente con tapa móvil contiene cantidades iguales de CO₂ y CO gaseosos. Si se duplica la cantidad de CO₂ manteniendo la presión y temperatura constantes, ¿qué ocurrirá?",
+    "options": [
+      {"text": "La cantidad de CO₂ será el doble que la de CO", "isCorrect": true, "rationale": "Se duplican sus moles respecto a CO."},
+      {"text": "Se duplica la presión parcial del CO₂", "isCorrect": false, "rationale": "La presión total se mantiene constante por ajuste de volumen."},
+      {"text": "La fracción molar del CO no varía", "isCorrect": false, "rationale": "Disminuye, ya que el CO₂ aumenta."},
+      {"text": "El volumen del recipiente se reduce", "isCorrect": false, "rationale": "El pistón se expande para conservar la presión."}
+    ],
+    "hint": ""
+  },
+]
+
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

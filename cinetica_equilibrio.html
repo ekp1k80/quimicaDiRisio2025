@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+
+    {
+        "question": "¿Qué representa la velocidad de cambio de concentración de una especie química en una reacción?",
+        "options": [
+            {"text": "El ritmo al que varía la cantidad de una sustancia por unidad de tiempo", "isCorrect": true, "rationale": "La velocidad mide la variación de concentración con respecto al tiempo."},
+            {"text": "La cantidad total de sustancia que reacciona al final del proceso", "isCorrect": false, "rationale": "Eso se relaciona con el rendimiento, no con la velocidad."},
+            {"text": "El tiempo necesario para alcanzar el equilibrio químico", "isCorrect": false, "rationale": "La velocidad no mide duración del proceso total."},
+            {"text": "La cantidad de energía liberada o absorbida durante la reacción", "isCorrect": false, "rationale": "Eso corresponde al aspecto termodinámico, no cinético."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué diferencia existe entre la velocidad de cambio de concentración de un reactivo y la velocidad de reacción global?",
+        "options": [
+            {"text": "La de un reactivo es específica y la global se ajusta a los coeficientes estequiométricos", "isCorrect": true, "rationale": "La velocidad global se define a partir de la variación normalizada por los coeficientes."},
+            {"text": "Son equivalentes en todas las reacciones", "isCorrect": false, "rationale": "Solo son iguales si la estequiometría es 1:1."},
+            {"text": "La global se mide en moles y la de un reactivo en concentración", "isCorrect": false, "rationale": "Ambas se expresan en concentración por unidad de tiempo."},
+            {"text": "La velocidad global es siempre mayor", "isCorrect": false, "rationale": "No tiene sentido compararlas en magnitud absoluta."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué se usa el signo negativo al expresar la velocidad de desaparición de un reactivo?",
+        "options": [
+            {"text": "Porque su concentración disminuye con el tiempo", "isCorrect": true, "rationale": "El signo negativo compensa la disminución para obtener velocidad positiva."},
+            {"text": "Porque el reactivo pierde energía durante la reacción", "isCorrect": false, "rationale": "No se relaciona con energía, sino con concentración."},
+            {"text": "Porque el reactivo se transforma en producto estable", "isCorrect": false, "rationale": "Eso es un efecto, no la razón del signo."},
+            {"text": "Porque representa una reacción endotérmica", "isCorrect": false, "rationale": "El signo no depende del tipo térmico de la reacción."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿En qué unidades se expresa comúnmente la velocidad de una reacción química?",
+        "options": [
+            {"text": "mol·L⁻¹·s⁻¹", "isCorrect": true, "rationale": "Expresa cambio de concentración (mol/L) por unidad de tiempo (s)."},
+            {"text": "J·mol⁻¹", "isCorrect": false, "rationale": "Corresponde a energía, no a velocidad."},
+            {"text": "L·mol⁻¹·s", "isCorrect": false, "rationale": "Es una forma dimensionalmente incorrecta para velocidad."},
+            {"text": "mol·s⁻¹·atm⁻¹", "isCorrect": false, "rationale": "Incluye presión, que no forma parte de la definición básica."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué factor tiene mayor influencia directa sobre la rapidez de una reacción química?",
+        "options": [
+            {"text": "La temperatura", "isCorrect": true, "rationale": "Aumenta la energía cinética y la frecuencia de colisiones efectivas."},
+            {"text": "El volumen del recipiente", "isCorrect": false, "rationale": "Influye de modo indirecto, no es determinante."},
+            {"text": "El estado físico de los productos", "isCorrect": false, "rationale": "La rapidez depende de los reactivos, no de los productos."},
+            {"text": "El tipo de unidad usada para medir concentración", "isCorrect": false, "rationale": "No afecta la cinética real."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo afecta un aumento de la concentración de los reactivos a la velocidad de reacción?",
+        "options": [
+            {"text": "Aumenta, porque se incrementa la frecuencia de colisiones efectivas", "isCorrect": true, "rationale": "Mayor concentración implica más colisiones por unidad de tiempo."},
+            {"text": "Disminuye, porque hay menos espacio disponible", "isCorrect": false, "rationale": "El confinamiento no reduce la velocidad en sí."},
+            {"text": "No cambia, porque depende solo de la temperatura", "isCorrect": false, "rationale": "La concentración influye directamente en la cinética."},
+            {"text": "Aumenta solo si hay un catalizador presente", "isCorrect": false, "rationale": "El catalizador acelera por otro mecanismo independiente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué efecto produce un incremento de temperatura sobre la constante de velocidad (k)?",
+        "options": [
+            {"text": "Aumenta exponencialmente", "isCorrect": true, "rationale": "Según la ecuación de Arrhenius, k crece exponencialmente con T."},
+            {"text": "Disminuye linealmente", "isCorrect": false, "rationale": "La dependencia no es lineal sino exponencial."},
+            {"text": "Permanece constante", "isCorrect": false, "rationale": "Solo es constante si la temperatura no cambia."},
+            {"text": "Cambia aleatoriamente según el catalizador", "isCorrect": false, "rationale": "Depende de T, no del catalizador directamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál de los siguientes factores no modifica el valor de la constante de velocidad a temperatura constante?",
+        "options": [
+            {"text": "La concentración de los reactivos", "isCorrect": true, "rationale": "k depende solo de la temperatura, no de la concentración."},
+            {"text": "La temperatura", "isCorrect": false, "rationale": "Es el principal factor que altera k."},
+            {"text": "La presencia de catalizadores", "isCorrect": false, "rationale": "Cambian la energía de activación, modificando k."},
+            {"text": "El tipo de reactivos involucrados", "isCorrect": false, "rationale": "Cada reacción tiene su propio valor de k."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa que una reacción sea de orden cero respecto de un reactivo?",
+        "options": [
+            {"text": "Que su velocidad no depende de la concentración de ese reactivo", "isCorrect": true, "rationale": "Orden cero implica independencia de la concentración."},
+            {"text": "Que el reactivo no participa en la reacción", "isCorrect": false, "rationale": "Participa, pero su concentración no afecta la velocidad."},
+            {"text": "Que la velocidad inicial es igual a cero", "isCorrect": false, "rationale": "No significa que la reacción no ocurra."},
+            {"text": "Que su concentración se mantiene constante", "isCorrect": false, "rationale": "No necesariamente; puede variar sin afectar la velocidad."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si una reacción tiene ecuación de velocidad v = k[A]^2[B], ¿cuál es su orden total?",
+        "options": [
+            {"text": "3", "isCorrect": true, "rationale": "Se suman los exponentes de las concentraciones: 2 + 1 = 3."},
+            {"text": "2", "isCorrect": false, "rationale": "Ignora la contribución del reactivo B."},
+            {"text": "1", "isCorrect": false, "rationale": "Equivale al orden de una sola especie."},
+            {"text": "Depende de las condiciones de presión", "isCorrect": false, "rationale": "El orden es independiente de la presión."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué representa el parámetro k en la ecuación de velocidad?",
+        "options": [
+            {"text": "La constante de velocidad, dependiente de la temperatura y la naturaleza de la reacción", "isCorrect": true, "rationale": "k es una constante específica para cada reacción y T."},
+            {"text": "El número de colisiones totales entre moléculas", "isCorrect": false, "rationale": "No representa una cantidad de eventos físicos."},
+            {"text": "La fracción de colisiones efectivas", "isCorrect": false, "rationale": "Eso se relaciona con la teoría de colisiones, no con k directamente."},
+            {"text": "La variación de energía interna por mol", "isCorrect": false, "rationale": "Eso describe un aspecto termodinámico, no cinético."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué información aportan los exponentes en la ecuación de velocidad?",
+        "options": [
+            {"text": "Indican el orden de reacción respecto a cada reactivo", "isCorrect": true, "rationale": "Los exponentes reflejan la dependencia de la velocidad con cada especie."},
+            {"text": "Representan los coeficientes estequiométricos", "isCorrect": false, "rationale": "Solo coinciden en casos específicos, no siempre."},
+            {"text": "Definen la energía de activación", "isCorrect": false, "rationale": "No tienen relación con la energía de activación."},
+            {"text": "Expresan la fracción molar de cada reactivo", "isCorrect": false, "rationale": "No guardan relación con fracciones molares."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué sucede con la energía de activación cuando se agrega un catalizador?",
+        "options": [
+            {"text": "Disminuye, facilitando la reacción", "isCorrect": true, "rationale": "El catalizador provee una vía alternativa con menor energía de activación."},
+            {"text": "Aumenta, haciendo más rápida la reacción", "isCorrect": false, "rationale": "Si aumenta Ea, la reacción se vuelve más lenta."},
+            {"text": "No cambia, solo se altera la constante de equilibrio", "isCorrect": false, "rationale": "El equilibrio no se modifica, pero sí la energía de activación."},
+            {"text": "Depende exclusivamente del orden de reacción", "isCorrect": false, "rationale": "El orden no determina la energía de activación."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál de las siguientes afirmaciones describe mejor la función de un catalizador?",
+        "options": [
+            {"text": "Disminuye la energía de activación sin consumirse en la reacción", "isCorrect": true, "rationale": "Esa es la definición esencial de un catalizador."},
+            {"text": "Aumenta la concentración de reactivos para acelerar la reacción", "isCorrect": false, "rationale": "No modifica concentraciones."},
+            {"text": "Cambia el equilibrio químico hacia los productos", "isCorrect": false, "rationale": "Solo afecta la velocidad, no la posición del equilibrio."},
+            {"text": "Se consume parcialmente para activar los reactivos", "isCorrect": false, "rationale": "No se consume; se regenera al final del proceso."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué ocurre con la velocidad de reacción si se duplica la temperatura?",
+        "options": [
+            {"text": "Aumenta considerablemente por el incremento de colisiones efectivas", "isCorrect": true, "rationale": "La energía cinética mayor produce más colisiones con energía suficiente."},
+            {"text": "Permanece constante, ya que solo depende de la concentración", "isCorrect": false, "rationale": "La temperatura influye directamente en la velocidad."},
+            {"text": "Disminuye porque aumenta la energía de activación", "isCorrect": false, "rationale": "Ea no aumenta con T."},
+            {"text": "Depende únicamente del catalizador presente", "isCorrect": false, "rationale": "El catalizador no reemplaza el efecto térmico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué una reacción no ocurre instantáneamente aunque sea termodinámicamente favorable?",
+        "options": [
+            {"text": "Porque requiere superar una barrera de energía de activación", "isCorrect": true, "rationale": "La espontaneidad no implica rapidez; depende de Ea."},
+            {"text": "Porque no hay suficiente cantidad de productos", "isCorrect": false, "rationale": "Los productos no determinan la velocidad inicial."},
+            {"text": "Porque la constante de equilibrio es baja", "isCorrect": false, "rationale": "Kc no determina la velocidad instantánea."},
+            {"text": "Porque el sistema no alcanza la presión necesaria", "isCorrect": false, "rationale": "No siempre depende de presión."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál de las siguientes magnitudes puede cambiar al variar la temperatura: k, m, n o ambas m y n?",
+        "options": [
+            {"text": "k", "isCorrect": true, "rationale": "Solo la constante de velocidad varía con T; los órdenes son empíricos y fijos."},
+            {"text": "m y n", "isCorrect": false, "rationale": "Los órdenes permanecen constantes en un rango dado."},
+            {"text": "k, m y n", "isCorrect": false, "rationale": "Solo k depende de la temperatura directamente."},
+            {"text": "Ninguna de las anteriores", "isCorrect": false, "rationale": "Incorrecto: k sí cambia con T."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si una reacción es de primer orden, ¿qué tipo de gráfica da una recta?",
+        "options": [
+            {"text": "ln[A] vs. tiempo", "isCorrect": true, "rationale": "Para primer orden, ln[A] decrece linealmente con el tiempo."},
+            {"text": "[A] vs. tiempo", "isCorrect": false, "rationale": "Esa relación es lineal solo para orden cero."},
+            {"text": "1/[A] vs. tiempo", "isCorrect": false, "rationale": "Corresponde a una reacción de segundo orden."},
+            {"text": "[A]^2 vs. tiempo", "isCorrect": false, "rationale": "No tiene interpretación cinética directa."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué se dice que los catalizadores no alteran el equilibrio químico final?",
+        "options": [
+            {"text": "Porque aceleran por igual las velocidades directa e inversa", "isCorrect": true, "rationale": "No cambian Kc, solo reducen el tiempo para alcanzarlo."},
+            {"text": "Porque aumentan la concentración de productos", "isCorrect": false, "rationale": "No modifican concentraciones de equilibrio."},
+            {"text": "Porque reducen la constante de equilibrio", "isCorrect": false, "rationale": "Kc depende solo de T, no del catalizador."},
+            {"text": "Porque cambian la energía de los productos", "isCorrect": false, "rationale": "Los estados inicial y final permanecen iguales."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se define la energía de activación en términos de la teoría de colisiones?",
+        "options": [
+            {"text": "La mínima energía necesaria para que una colisión sea efectiva", "isCorrect": true, "rationale": "Es la barrera energética para formar el estado activado."},
+            {"text": "La energía total de todas las colisiones por segundo", "isCorrect": false, "rationale": "No es una suma sino un umbral."},
+            {"text": "La energía promedio de todas las moléculas", "isCorrect": false, "rationale": "Eso corresponde a la energía cinética media."},
+            {"text": "La energía liberada cuando las moléculas reaccionan", "isCorrect": false, "rationale": "Eso describe el calor de reacción, no Ea."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Siempre que la concentración de una especie varía, la velocidad de la reacción también lo hace.",
+        "options": [
+            {"text": "Verdadero, porque la velocidad depende de las concentraciones instantáneas", "isCorrect": true, "rationale": "La ley de velocidad relaciona ambas magnitudes."},
+            {"text": "Falso, la velocidad solo depende de la energía de activación", "isCorrect": false, "rationale": "Ea no cambia con la concentración."},
+            {"text": "Falso, solo varía al inicio de la reacción", "isCorrect": false, "rationale": "Cambia continuamente mientras varían las concentraciones."},
+            {"text": "Falso, depende solo del catalizador", "isCorrect": false, "rationale": "El catalizador no reemplaza la influencia de las concentraciones."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué se entiende por equilibrio químico en una reacción reversible?",
+        "options": [
+            {"text": "Estado en el cual las velocidades de la reacción directa e inversa son iguales", "isCorrect": true, "rationale": "El equilibrio se define por igualdad de velocidades de reacción."},
+            {"text": "Situación en la que las concentraciones de reactivos y productos son iguales", "isCorrect": false, "rationale": "No necesariamente deben ser iguales."},
+            {"text": "Momento en que la reacción se detiene completamente", "isCorrect": false, "rationale": "Las reacciones continúan, es un equilibrio dinámico."},
+            {"text": "Condición en que sólo los productos permanecen en el sistema", "isCorrect": false, "rationale": "Los reactivos siguen presentes en equilibrio."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Cuando una reacción alcanza el equilibrio a una temperatura dada, ¿cómo se comportan las concentraciones de los reactivos y de los productos?",
+        "options": [
+            {"text": "Se mantienen constantes en el tiempo", "isCorrect": true, "rationale": "El equilibrio dinámico implica concentraciones constantes."},
+            {"text": "Aumentan continuamente los productos", "isCorrect": false, "rationale": "Eso ocurre antes de alcanzar el equilibrio."},
+            {"text": "Disminuyen los reactivos hasta desaparecer", "isCorrect": false, "rationale": "No necesariamente todos los reactivos se consumen."},
+            {"text": "Fluctúan aleatoriamente", "isCorrect": false, "rationale": "En equilibrio, no fluctúan significativamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué se dice que el estado de equilibrio es dinámico?",
+        "options": [
+            {"text": "Porque las reacciones directa e inversa continúan ocurriendo a la misma velocidad", "isCorrect": true, "rationale": "El equilibrio es dinámico, no estático."},
+            {"text": "Porque las concentraciones cambian constantemente", "isCorrect": false, "rationale": "Se mantienen constantes en equilibrio."},
+            {"text": "Porque la temperatura del sistema varía continuamente", "isCorrect": false, "rationale": "La temperatura puede ser constante."},
+            {"text": "Porque los productos se convierten completamente en reactivos", "isCorrect": false, "rationale": "Esto no ocurre de manera completa."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué información proporciona el valor de la constante de equilibrio (Kc) sobre una reacción química?",
+        "options": [
+            {"text": "La proporción relativa de concentraciones de productos y reactivos en equilibrio", "isCorrect": true, "rationale": "Kc indica la posición del equilibrio respecto a productos y reactivos."},
+            {"text": "La velocidad a la que ocurre la reacción", "isCorrect": false, "rationale": "Kc no depende de la cinética."},
+            {"text": "La temperatura exacta del sistema", "isCorrect": false, "rationale": "Kc no da temperatura."},
+            {"text": "La presión total en un sistema gaseoso", "isCorrect": false, "rationale": "No necesariamente se relaciona con la presión total."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Depende la constante de equilibrio de la velocidad de reacción?",
+        "options": [
+            {"text": "No, Kc depende únicamente de la temperatura", "isCorrect": true, "rationale": "Kc no cambia con la velocidad de reacción."},
+            {"text": "Sí, a mayor velocidad, mayor Kc", "isCorrect": false, "rationale": "La velocidad no altera el valor de Kc."},
+            {"text": "Sí, a menor velocidad, menor Kc", "isCorrect": false, "rationale": "Incorrecto; Kc es independiente de la cinética."},
+            {"text": "Depende del número de colisiones efectivas", "isCorrect": false, "rationale": "Eso afecta la velocidad, no Kc."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Depende la constante de equilibrio de la cantidad inicial de reactivos a temperatura constante?",
+        "options": [
+            {"text": "No, Kc solo depende de la temperatura", "isCorrect": true, "rationale": "Cambiar las concentraciones iniciales afecta Qc pero no Kc."},
+            {"text": "Sí, a mayor concentración inicial, mayor Kc", "isCorrect": false, "rationale": "Falso, Kc no cambia."},
+            {"text": "Sí, a menor concentración inicial, menor Kc", "isCorrect": false, "rationale": "Incorrecto."},
+            {"text": "Depende del volumen del sistema", "isCorrect": false, "rationale": "Solo afecta concentraciones parciales, no Kc."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se calcula la constante de equilibrio (Kc) para una reacción del tipo aA + eE ↔ qQ + xX?",
+        "options": [
+            {"text": "Kc = [Q]^q [X]^x / [A]^a [E]^e", "isCorrect": true, "rationale": "Expresión estándar en función de concentraciones molares."},
+            {"text": "Kc = [A]^a [E]^e / [Q]^q [X]^x", "isCorrect": false, "rationale": "Invierte reactivos y productos."},
+            {"text": "Kc = [A] + [E] - [Q] - [X]", "isCorrect": false, "rationale": "No es la definición de constante de equilibrio."},
+            {"text": "Kc = ([Q] [X]) / ([A] + [E])", "isCorrect": false, "rationale": "Fórmula incorrecta."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa un Kc mayor que 1?",
+        "options": [
+            {"text": "El equilibrio favorece a los productos", "isCorrect": true, "rationale": "Más concentración de productos que de reactivos."},
+            {"text": "El equilibrio favorece a los reactivos", "isCorrect": false, "rationale": "Eso ocurre si Kc < 1."},
+            {"text": "No hay productos presentes", "isCorrect": false, "rationale": "Kc > 1 indica presencia significativa de productos."},
+            {"text": "La reacción no ocurre", "isCorrect": false, "rationale": "Kc > 1 implica reacción favorable."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa un Kc menor que 1?",
+        "options": [
+            {"text": "El equilibrio favorece a los reactivos", "isCorrect": true, "rationale": "Mayor concentración de reactivos en equilibrio."},
+            {"text": "El equilibrio favorece a los productos", "isCorrect": false, "rationale": "Eso ocurre si Kc > 1."},
+            {"text": "Todos los reactivos se han consumido", "isCorrect": false, "rationale": "No necesariamente; Kc < 1 indica predominio de reactivos."},
+            {"text": "La reacción es irreversible", "isCorrect": false, "rationale": "Kc < 1 no afecta reversibilidad."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es el cociente de reacción (Qc) y cómo se utiliza para predecir el sentido del cambio neto de una reacción?",
+        "options": [
+            {"text": "Qc se calcula igual que Kc pero para concentraciones no en equilibrio; compara Qc con Kc para saber hacia dónde se desplazará la reacción", "isCorrect": true, "rationale": "Qc indica el progreso de la reacción."},
+            {"text": "Qc siempre es igual a Kc", "isCorrect": false, "rationale": "Solo coincide en equilibrio."},
+            {"text": "Qc es la velocidad de la reacción", "isCorrect": false, "rationale": "No tiene relación con cinética."},
+            {"text": "Qc indica la presión total en el sistema", "isCorrect": false, "rationale": "Incorrecto; se basa en concentraciones."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si Qc < Kc, ¿en qué sentido se desplazará la reacción?",
+        "options": [
+            {"text": "Hacia los productos", "isCorrect": true, "rationale": "Se debe formar más producto hasta alcanzar equilibrio."},
+            {"text": "Hacia los reactivos", "isCorrect": false, "rationale": "Eso ocurriría si Qc > Kc."},
+            {"text": "No hay desplazamiento", "isCorrect": false, "rationale": "El sistema aún no está en equilibrio."},
+            {"text": "Depende de la temperatura", "isCorrect": false, "rationale": "El sentido lo determina Qc/Kc, no la temperatura directamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si Qc > Kc, ¿en qué sentido se desplazará la reacción?",
+        "options": [
+            {"text": "Hacia los reactivos", "isCorrect": true, "rationale": "Se debe consumir producto para alcanzar equilibrio."},
+            {"text": "Hacia los productos", "isCorrect": false, "rationale": "Eso ocurre si Qc < Kc."},
+            {"text": "No hay desplazamiento", "isCorrect": false, "rationale": "El sistema aún no está en equilibrio."},
+            {"text": "Depende de la presión", "isCorrect": false, "rationale": "El sentido se basa en Qc y Kc, no presión absoluta."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál es el efecto de aumentar la concentración de un reactivo sobre el equilibrio?",
+        "options": [
+            {"text": "La reacción se desplaza hacia los productos", "isCorrect": true, "rationale": "Principio de Le Châtelier: se consume el exceso de reactivo."},
+            {"text": "La reacción se detiene", "isCorrect": false, "rationale": "No se detiene, solo se ajusta el equilibrio."},
+            {"text": "La constante de equilibrio aumenta", "isCorrect": false, "rationale": "Kc no cambia por concentraciones iniciales."},
+            {"text": "Los productos se descomponen inmediatamente", "isCorrect": false, "rationale": "No necesariamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál es el efecto de aumentar la concentración de un producto sobre el equilibrio?",
+        "options": [
+            {"text": "La reacción se desplaza hacia los reactivos", "isCorrect": true, "rationale": "Se reduce el exceso de producto, consumiéndolo."},
+            {"text": "La reacción se desplaza hacia los productos", "isCorrect": false, "rationale": "Eso ocurre si se aumenta un reactivo."},
+            {"text": "Kc aumenta", "isCorrect": false, "rationale": "Kc no cambia con concentración."},
+            {"text": "No hay efecto", "isCorrect": false, "rationale": "Hay efecto de desplazamiento según Le Châtelier."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo afecta un aumento de presión (o disminución de volumen) en un sistema gaseoso en equilibrio?",
+        "options": [
+            {"text": "La reacción se desplaza hacia el lado con menos moles de gas", "isCorrect": true, "rationale": "Principio de Le Châtelier para gases."},
+            {"text": "La reacción se desplaza hacia el lado con más moles de gas", "isCorrect": false, "rationale": "Eso sería contrario a la compensación de presión."},
+            {"text": "No hay efecto", "isCorrect": false, "rationale": "Sí hay efecto si hay diferencia de moles gaseosos."},
+            {"text": "Kc aumenta", "isCorrect": false, "rationale": "Kc depende solo de temperatura."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué efecto tiene la temperatura sobre el valor de la constante de equilibrio en reacciones exotérmicas?",
+        "options": [
+            {"text": "Aumentar temperatura disminuye Kc", "isCorrect": true, "rationale": "El equilibrio se desplaza hacia reactivos según Le Châtelier."},
+            {"text": "Aumentar temperatura aumenta Kc", "isCorrect": false, "rationale": "Eso ocurre en endotérmicas, no exotérmicas."},
+            {"text": "No afecta Kc", "isCorrect": false, "rationale": "La temperatura sí afecta Kc."},
+            {"text": "La reacción se detiene", "isCorrect": false, "rationale": "Incorrecto; solo cambia la posición del equilibrio."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué efecto tiene la temperatura sobre el valor de la constante de equilibrio en reacciones endotérmicas?",
+        "options": [
+            {"text": "Aumentar temperatura aumenta Kc", "isCorrect": true, "rationale": "El equilibrio se desplaza hacia productos para absorber calor."},
+            {"text": "Aumentar temperatura disminuye Kc", "isCorrect": false, "rationale": "Eso ocurre en exotérmicas."},
+            {"text": "No afecta Kc", "isCorrect": false, "rationale": "Kc depende de temperatura."},
+            {"text": "La reacción se detiene", "isCorrect": false, "rationale": "No se detiene."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué no afectan las perturbaciones de concentración o presión el valor de Kc, pero sí la temperatura?",
+        "options": [
+            {"text": "Porque Kc se define termodinámicamente y depende solo de la energía de reacción (ΔG) y temperatura", "isCorrect": true, "rationale": "Concentraciones iniciales y presión afectan Qc, no Kc."},
+            {"text": "Porque la concentración inicial no tiene efecto sobre ninguna propiedad", "isCorrect": false, "rationale": "Afecta Qc y posición del equilibrio, no Kc."},
+            {"text": "Porque la presión nunca influye en equilibrio", "isCorrect": false, "rationale": "La presión afecta posición, no Kc directamente."},
+            {"text": "Porque Kc es siempre constante para cualquier sistema", "isCorrect": false, "rationale": "Solo a temperatura fija."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Es correcto afirmar que cuanto más rápidamente ocurra una reacción, mayor será la cantidad de productos en equilibrio?",
+        "options": [
+            {"text": "No, la velocidad no afecta la posición de equilibrio", "isCorrect": true, "rationale": "Equilibrio depende de termodinámica, no cinética."},
+            {"text": "Sí, siempre más velocidad → más productos", "isCorrect": false, "rationale": "Incorrecto, confunde cinética con equilibrio."},
+            {"text": "Depende de la concentración inicial", "isCorrect": false, "rationale": "La velocidad no determina Kc."},
+            {"text": "Depende del volumen del sistema", "isCorrect": false, "rationale": "Solo cambia concentración parcial, no Kc."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Es correcto afirmar que cuanto mayor sea la cantidad inicial de reactivos, mayor será la constante de equilibrio a una temperatura dada?",
+        "options": [
+            {"text": "No, Kc no depende de cantidades iniciales", "isCorrect": true, "rationale": "Kc solo depende de temperatura."},
+            {"text": "Sí, mayor reactivo inicial → mayor Kc", "isCorrect": false, "rationale": "Falso, solo afecta Qc y desplazamiento de equilibrio."},
+            {"text": "Depende de la presión", "isCorrect": false, "rationale": "La presión afecta concentración, no Kc directamente."},
+            {"text": "Depende de la velocidad de reacción", "isCorrect": false, "rationale": "Incorrecto, cinética no altera Kc."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se relaciona el valor de Kc con la posición del equilibrio respecto a productos y reactivos?",
+        "options": [
+            {"text": "Kc >> 1 → equilibrio favorece productos; Kc << 1 → favorece reactivos", "isCorrect": true, "rationale": "Interpretación directa de Kc."},
+            {"text": "Kc >> 1 → equilibrio favorece reactivos; Kc << 1 → favorece productos", "isCorrect": false, "rationale": "Invierte la relación."},
+            {"text": "Kc = 1 → equilibrio solo de reactivos", "isCorrect": false, "rationale": "Kc = 1 indica similar proporción de reactivos y productos."},
+            {"text": "Kc no da información sobre posición de equilibrio", "isCorrect": false, "rationale": "Falso; Kc indica posición relativa."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa que una reacción tenga un equilibrio “favorecido hacia los productos”?",
+        "options": [
+            {"text": "Mayor concentración de productos que de reactivos en equilibrio", "isCorrect": true, "rationale": "Definición de equilibrio favorecido a productos."},
+            {"text": "Todos los reactivos se han consumido", "isCorrect": false, "rationale": "No necesariamente todos se consumen."},
+            {"text": "La reacción ocurre irreversible", "isCorrect": false, "rationale": "No implica irreversibilidad."},
+            {"text": "La velocidad de formación de productos es cero", "isCorrect": false, "rationale": "En equilibrio dinámico la velocidad no es cero."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa que una reacción tenga un equilibrio “favorecido hacia los reactivos”?",
+        "options": [
+            {"text": "Mayor concentración de reactivos que de productos en equilibrio", "isCorrect": true, "rationale": "Definición de equilibrio favorecido a reactivos."},
+            {"text": "Todos los productos desaparecen", "isCorrect": false, "rationale": "No necesariamente todos desaparecen."},
+            {"text": "Kc > 1", "isCorrect": false, "rationale": "Kc < 1 para equilibrio favorecido a reactivos."},
+            {"text": "No ocurre reacción", "isCorrect": false, "rationale": "Ocurre reacción, pero predominan reactivos."}
+        ],
+        "hint": ""
+    }
+]
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

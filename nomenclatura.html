@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+   {
+        "question": "Nombra el siguiente compuesto: FeO",
+        "options": [
+            {"text": "Óxido de hierro(II)", "isCorrect": true, "rationale": "Hierro con número de oxidación +2."},
+            {"text": "Óxido de hierro(III)", "isCorrect": false, "rationale": "El hierro no está en +3."},
+            {"text": "Óxido ferroso", "isCorrect": true, "rationale": "Nombre alternativo válido."},
+            {"text": "Óxido férrico", "isCorrect": false, "rationale": "Férrico corresponde a +3."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: Fe₂O₃",
+        "options": [
+            {"text": "Óxido de hierro(III)", "isCorrect": true, "rationale": "Hierro en estado +3."},
+            {"text": "Óxido de hierro(II)", "isCorrect": false, "rationale": "Hierro no está en +2."},
+            {"text": "Óxido férrico", "isCorrect": true, "rationale": "Nombre tradicional."},
+            {"text": "Óxido ferroso", "isCorrect": false, "rationale": "Ferroso indica +2."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: CO",
+        "options": [
+            {"text": "Monóxido de carbono", "isCorrect": true, "rationale": "Óxido covalente simple de carbono."},
+            {"text": "Dióxido de carbono", "isCorrect": false, "rationale": "Este sería CO₂."},
+            {"text": "Óxido de carbonilo", "isCorrect": false, "rationale": "Nombre no sistemático."},
+            {"text": "Carburo de oxígeno", "isCorrect": false, "rationale": "No existe en nomenclatura IUPAC."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: CO₂",
+        "options": [
+            {"text": "Dióxido de carbono", "isCorrect": true, "rationale": "Dos átomos de oxígeno unidos a carbono."},
+            {"text": "Monóxido de carbono", "isCorrect": false, "rationale": "Solo un oxígeno sería CO."},
+            {"text": "Carbonato", "isCorrect": false, "rationale": "Carbonato es CO₃²⁻, no CO₂."},
+            {"text": "Óxido de carbono(IV)", "isCorrect": true, "rationale": "Nombre alternativo sistemático."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaH",
+        "options": [
+            {"text": "Hidruro de sodio", "isCorrect": true, "rationale": "Hidruro metálico."},
+            {"text": "Hidróxido de sodio", "isCorrect": false, "rationale": "OH⁻ no está presente."},
+            {"text": "Soduro de hidrógeno", "isCorrect": false, "rationale": "No es nombre correcto."},
+            {"text": "Hidruro sódico", "isCorrect": true, "rationale": "Nombre alternativo válido."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: FeH₃",
+        "options": [
+            {"text": "Hidruro de hierro(III)", "isCorrect": true, "rationale": "Hierro en +3 con hidrógeno."},
+            {"text": "Hidruro ferroso", "isCorrect": false, "rationale": "Ferroso indica +2."},
+            {"text": "Trihidruro de hierro", "isCorrect": false, "rationale": "Nombre sistemático menos usado, correcto pero raro."},
+            {"text": "Hidruro de hierro(II)", "isCorrect": false, "rationale": "Número de oxidación incorrecto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: HCl",
+        "options": [
+            {"text": "Ácido clorhídrico", "isCorrect": true, "rationale": "Hidrácido común."},
+            {"text": "Cloruro de hidrógeno", "isCorrect": true, "rationale": "Nombre como gas, no disuelto."},
+            {"text": "Ácido clórico", "isCorrect": false, "rationale": "Clórico es HClO₃, no HCl."},
+            {"text": "Hidruro de cloro", "isCorrect": false, "rationale": "No se usa en nomenclatura actual."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: H₂S",
+        "options": [
+            {"text": "Ácido sulfhídrico", "isCorrect": true, "rationale": "Hidrácido de azufre."},
+            {"text": "Sulfuro de hidrógeno", "isCorrect": true, "rationale": "Nombre como gas."},
+            {"text": "Ácido sulfúrico", "isCorrect": false, "rationale": "H₂SO₄, no H₂S."},
+            {"text": "Sulfuro de hidrógeno(II)", "isCorrect": false, "rationale": "No es nomenclatura habitual."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaCl",
+        "options": [
+            {"text": "Cloruro de sodio", "isCorrect": true, "rationale": "Sal binaria típica."},
+            {"text": "Sal común", "isCorrect": true, "rationale": "Nombre trivial."},
+            {"text": "Hidruro de sodio", "isCorrect": false, "rationale": "Incorrecto, no hay H⁻."},
+            {"text": "Óxido de sodio", "isCorrect": false, "rationale": "No hay oxígeno."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: CuCl₂",
+        "options": [
+            {"text": "Cloruro de cobre(II)", "isCorrect": true, "rationale": "Cobre con número de oxidación +2."},
+            {"text": "Cloruro cuproso", "isCorrect": false, "rationale": "Cuproso indica +1."},
+            {"text": "Cloruro de cobre(I)", "isCorrect": false, "rationale": "Número de oxidación incorrecto."},
+            {"text": "Dicloruro de cobre", "isCorrect": false, "rationale": "Nombre poco usado, ambiguo."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaOH",
+        "options": [
+            {"text": "Hidróxido de sodio", "isCorrect": true, "rationale": "Hidróxido metálico común."},
+            {"text": "Soda cáustica", "isCorrect": true, "rationale": "Nombre trivial."},
+            {"text": "Hidruro de sodio", "isCorrect": false, "rationale": "Incorrecto, no hay H⁻."},
+            {"text": "Óxido de sodio", "isCorrect": false, "rationale": "No hay oxígeno en forma de óxido."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: Fe(OH)₃",
+        "options": [
+            {"text": "Hidróxido de hierro(III)", "isCorrect": true, "rationale": "Hierro con número de oxidación +3."},
+            {"text": "Hidróxido férrico", "isCorrect": true, "rationale": "Nombre alternativo tradicional."},
+            {"text": "Hidróxido de hierro(II)", "isCorrect": false, "rationale": "Número de oxidación incorrecto."},
+            {"text": "Hidróxido ferroso", "isCorrect": false, "rationale": "Ferroso indica +2."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: H₂SO₄",
+        "options": [
+            {"text": "Ácido sulfúrico", "isCorrect": true, "rationale": "Oxácido común de azufre."},
+            {"text": "Ácido tetraoxosulfúrico", "isCorrect": false, "rationale": "Nombre sistemático menos usado."},
+            {"text": "Sulfato de hidrógeno", "isCorrect": false, "rationale": "Incorrecto, no es sal."},
+            {"text": "Ácido sulfuroso", "isCorrect": false, "rationale": "H₂SO₃, no H₂SO₄."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: H₂SO₃",
+        "options": [
+            {"text": "Ácido sulfuroso", "isCorrect": true, "rationale": "Oxácido de azufre con valencia +4."},
+            {"text": "Ácido sulfúrico", "isCorrect": false, "rationale": "H₂SO₄, valencia +6."},
+            {"text": "Sulfato de hidrógeno", "isCorrect": false, "rationale": "No es sal."},
+            {"text": "Ácido dihidrogenosulfato", "isCorrect": false, "rationale": "Nombre confuso e incorrecto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: Na₂SO₄",
+        "options": [
+            {"text": "Sulfato de sodio", "isCorrect": true, "rationale": "Sal ternaria de sodio y ácido sulfúrico."},
+            {"text": "Sulfito de sodio", "isCorrect": false, "rationale": "Sulfito corresponde a SO₃²⁻."},
+            {"text": "Hidrogenosulfato de sodio", "isCorrect": false, "rationale": "Incorrecto, no hay H⁺."},
+            {"text": "Sulfato sódico", "isCorrect": false, "rationale": "No es nombre IUPAC usual."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: Fe₂(SO₄)₃",
+        "options": [
+            {"text": "Sulfato de hierro(III)", "isCorrect": true, "rationale": "Hierro con valencia +3."},
+            {"text": "Sulfato férrico", "isCorrect": true, "rationale": "Nombre tradicional."},
+            {"text": "Sulfato de hierro(II)", "isCorrect": false, "rationale": "Número de oxidación incorrecto."},
+            {"text": "Bisulfato de hierro", "isCorrect": false, "rationale": "No corresponde."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaHSO₄",
+        "options": [
+            {"text": "Bisulfato de sodio", "isCorrect": true, "rationale": "Hidrogenosulfato, sal ácida."},
+            {"text": "Sulfato de sodio", "isCorrect": false, "rationale": "No es la forma ácida."},
+            {"text": "Hidrógeno sulfato de sodio", "isCorrect": false, "rationale": "No es nomenclatura habitual."},
+            {"text": "Sulfito de sodio", "isCorrect": false, "rationale": "SO₃²⁻, incorrecto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaHCO₃",
+        "options": [
+            {"text": "Bicarbonato de sodio", "isCorrect": true, "rationale": "Hidrogenocarbonato de sodio."},
+            {"text": "Carbonato de sodio", "isCorrect": false, "rationale": "CO₃²⁻, no HCO₃⁻."},
+            {"text": "Hidrogenocarbonato de sodio", "isCorrect": true, "rationale": "Nombre alternativo correcto."},
+            {"text": "Sódico bicarbonato", "isCorrect": false, "rationale": "No es nomenclatura oficial."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: HClO",
+        "options": [
+            {"text": "Ácido hipocloroso", "isCorrect": true, "rationale": "Oxácido de Cl con valencia +1."},
+            {"text": "Ácido clórico", "isCorrect": false, "rationale": "Clórico es HClO₃."},
+            {"text": "Ácido cloroso", "isCorrect": false, "rationale": "HClO₂, incorrecto."},
+            {"text": "Cloruro de hidrógeno", "isCorrect": false, "rationale": "Hidrácido, no oxácido."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Nombra el siguiente compuesto: NaClO",
+        "options": [
+            {"text": "Hipoclorito de sodio", "isCorrect": true, "rationale": "Sal de ácido hipocloroso."},
+            {"text": "Clorito de sodio", "isCorrect": false, "rationale": "Clorito es NaClO₂."},
+            {"text": "Cloruro de sodio", "isCorrect": false, "rationale": "NaCl, no NaClO."},
+            {"text": "Clorato de sodio", "isCorrect": false, "rationale": "NaClO₃, incorrecto."}
+        ],
+        "hint": ""
+    }
+]
+
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "¿Qué interacciones intervienen en la disolución de una sustancia iónica y una covalente en agua?",
+    "options": [
+      {"text": "Ion–dipolo y dipolo–dipolo respectivamente", "isCorrect": true, "rationale": "NaCl forma interacciones ion–dipolo, mientras compuestos polares establecen dipolo–dipolo o puentes de H."},
+      {"text": "Puentes de hidrógeno en ambos casos", "isCorrect": false, "rationale": "Los iones no establecen puentes de H, sino interacciones electrostáticas."},
+      {"text": "Fuerzas de Van der Waals predominantes", "isCorrect": false, "rationale": "Actúan, pero no dominan en sistemas acuosos polares."},
+      {"text": "Solo interacciones ión–ión", "isCorrect": false, "rationale": "Estas deben romperse para que ocurra la disolución."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la molaridad?",
+    "options": [
+      {"text": "Moles de soluto por litro de disolución", "isCorrect": true, "rationale": "Definición formal de concentración molar."},
+      {"text": "Moles de soluto por kilogramo de disolvente", "isCorrect": false, "rationale": "Eso corresponde a la molalidad."},
+      {"text": "Gramos de soluto por 100 mL de disolución", "isCorrect": false, "rationale": "Eso define % m/v."},
+      {"text": "Moles totales por litro de disolvente", "isCorrect": false, "rationale": "Debe ser volumen total de disolución, no solo disolvente."}
+    ],
+    "hint": ""
+  },
+  {
+        "question": "¿Qué es la molalidad?",
+        "options": [
+            {"text": "Cantidad de soluto (mol) por kilogramo de disolvente", "isCorrect": true, "rationale": "Definición formal: mol soluto / kg disolvente."},
+            {"text": "Cantidad de soluto (mol) por litro de disolución", "isCorrect": false, "rationale": "Eso corresponde a molaridad, no molalidad."},
+            {"text": "Relación entre masa de soluto y masa total de disolución", "isCorrect": false, "rationale": "Define porcentaje masa a masa."},
+            {"text": "Número de partículas disueltas por litro de disolvente", "isCorrect": false, "rationale": "No considera masa del disolvente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es el porcentaje masa a masa (% m/m)?",
+        "options": [
+            {"text": "Relación entre la masa de soluto y la masa de disolvente multiplicada por 100", "isCorrect": false, "rationale": "Debe ser masa de disolución, no solo disolvente."},
+            {"text": "Relación entre la masa de soluto y la masa total de la disolución por 100", "isCorrect": true, "rationale": "Definición correcta: % m/m = (masa soluto / masa disolución) × 100."},
+            {"text": "Relación entre el volumen del soluto y la masa de la disolución por 100", "isCorrect": false, "rationale": "Mezcla unidades distintas."},
+            {"text": "Moles de soluto por 100 g de disolvente", "isCorrect": false, "rationale": "No corresponde al concepto de porcentaje m/m."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es el porcentaje masa/volumen (% m/v)?",
+        "options": [
+            {"text": "Moles de soluto por litro de disolución", "isCorrect": false, "rationale": "Eso describe la molaridad."},
+            {"text": "Gramos de soluto por 100 mL de disolución", "isCorrect": true, "rationale": "Definición estándar: % m/v = (g soluto / 100 mL disolución)."},
+            {"text": "Gramos de soluto por 100 mL de disolvente", "isCorrect": false, "rationale": "Debe referirse a disolución, no disolvente."},
+            {"text": "Relación entre masa total y volumen total de la disolución", "isCorrect": false, "rationale": "No se usa para concentraciones químicas."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es el porcentaje volumen a volumen (% v/v)?",
+        "options": [
+            {"text": "Relación entre volumen de soluto y volumen de disolución multiplicada por 100", "isCorrect": true, "rationale": "Definición precisa para mezclas líquidas."},
+            {"text": "Relación entre masa de soluto y volumen de disolución por 100", "isCorrect": false, "rationale": "Mezcla masa y volumen, incorrecto."},
+            {"text": "Volumen de disolvente por 100 mL de soluto", "isCorrect": false, "rationale": "Invierte la relación."},
+            {"text": "Moles de soluto por 100 mL de disolvente", "isCorrect": false, "rationale": "Involucra moles, no volumen."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa 'ppm' en química?",
+        "options": [
+            {"text": "Partes por millón: cantidad de soluto por 10⁶ partes de disolución", "isCorrect": true, "rationale": "Definición exacta usada en soluciones muy diluidas."},
+            {"text": "Partes por mil: cantidad de soluto por 10³ partes de disolución", "isCorrect": false, "rationale": "Eso sería '‰' o por mil."},
+            {"text": "Presión parcial media de una mezcla gaseosa", "isCorrect": false, "rationale": "No tiene relación con concentración."},
+            {"text": "Porcentaje en volumen de gases disueltos", "isCorrect": false, "rationale": "Se usa solo para líquidos o sólidos."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa 'ppb' en química?",
+        "options": [
+            {"text": "Partes por billón: cantidad de soluto por 10⁹ partes de disolución", "isCorrect": true, "rationale": "Definición estándar de ppb."},
+            {"text": "Partes por millón: cantidad de soluto por 10⁶ partes de disolución", "isCorrect": false, "rationale": "Eso corresponde a ppm."},
+            {"text": "Presión parcial base de una mezcla gaseosa", "isCorrect": false, "rationale": "No aplica en este contexto."},
+            {"text": "Proporción de átomos por volumen", "isCorrect": false, "rationale": "No define unidades químicas válidas."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es un electrolito fuerte?",
+        "options": [
+            {"text": "Sustancia que se disocia completamente en iones en disolución acuosa", "isCorrect": true, "rationale": "Definición precisa: ionización completa."},
+            {"text": "Sustancia que conduce poca corriente eléctrica", "isCorrect": false, "rationale": "Eso define un electrolito débil."},
+            {"text": "Sustancia que no se disuelve en agua", "isCorrect": false, "rationale": "Un electrolito debe disolverse."},
+            {"text": "Compuesto que contiene metales de transición", "isCorrect": false, "rationale": "No implica fuerza electrolítica."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo es la ecuación de dilución de una solución?",
+        "options": [
+            {"text": "M₁V₁ = M₂V₂", "isCorrect": true, "rationale": "Conservación de moles en diluciones: M₁V₁ = M₂V₂."},
+            {"text": "P₁V₁ = P₂V₂", "isCorrect": false, "rationale": "Ecuación de Boyle para gases, no diluciones."},
+            {"text": "M₁V₂ = M₂V₁²", "isCorrect": false, "rationale": "No conserva las unidades ni moles."},
+            {"text": "n = M·V", "isCorrect": false, "rationale": "Ecuación general, no de dilución."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se disocia el electrolito fuerte Ni(NO₃)₃ en agua?",
+        "options": [
+            {"text": "Ni(NO₃)₃ → Ni³⁺ + 3 NO₃⁻", "isCorrect": true, "rationale": "El catión es Ni³⁺ y el anión nitrato es NO₃⁻."},
+            {"text": "Ni(NO₃)₃ → Ni²⁺ + 2 NO₃⁻", "isCorrect": false, "rationale": "No conserva la carga eléctrica total."},
+            {"text": "Ni(NO₃)₃ → Ni + 3 NO₃", "isCorrect": false, "rationale": "No representa especies iónicas."},
+            {"text": "Ni(NO₃)₃ → NiO + 3 NO₂", "isCorrect": false, "rationale": "Eso ocurre solo en descomposición térmica."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se disocia el electrolito fuerte K₃PO₄ en agua?",
+        "options": [
+            {"text": "K₃PO₄ → 3 K⁺ + PO₄³⁻", "isCorrect": true, "rationale": "El fosfato libera tres iones potasio."},
+            {"text": "K₃PO₄ → K³⁺ + PO₄⁻", "isCorrect": false, "rationale": "No respeta las cargas reales."},
+            {"text": "K₃PO₄ → 3 K⁺ + 4 PO₄²⁻", "isCorrect": false, "rationale": "Carga y número de átomos incorrectos."},
+            {"text": "K₃PO₄ → K₂O + H₃PO₄", "isCorrect": false, "rationale": "Esa es una reacción de neutralización, no disociación."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se disocia el electrolito fuerte MgCl₂ en agua?",
+        "options": [
+            {"text": "MgCl₂ → Mg²⁺ + 2 Cl⁻", "isCorrect": true, "rationale": "Disociación completa en iones."},
+            {"text": "MgCl₂ → Mg⁺ + Cl⁻", "isCorrect": false, "rationale": "Magnesio no forma ion monovalente."},
+            {"text": "MgCl₂ → Mg + Cl₂", "isCorrect": false, "rationale": "Eso sería una reacción redox, no disociación."},
+            {"text": "MgCl₂ → Mg²⁺ + Cl₂⁻", "isCorrect": false, "rationale": "El ion Cl₂⁻ no existe en disolución."}
+        ],
+        "hint": ""
+    },
+]
+
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

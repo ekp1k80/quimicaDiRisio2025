@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "question": "¿Qué es un cambio físico?",
+        "options": [
+            {"text": "Transformación que no altera la composición química de la sustancia", "isCorrect": true, "rationale": "Solo cambia el estado o forma, no la identidad química."},
+            {"text": "Transformación que produce sustancias nuevas", "isCorrect": false, "rationale": "Eso define cambio químico."},
+            {"text": "Reacción que libera o absorbe energía", "isCorrect": false, "rationale": "Eso puede ocurrir en ambos tipos, pero no define el físico."},
+            {"text": "Reorganización de átomos en nuevas moléculas", "isCorrect": false, "rationale": "Eso describe un proceso químico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es un cambio químico?",
+        "options": [
+            {"text": "Transformación en la que se forman una o más sustancias nuevas", "isCorrect": true, "rationale": "Definición central de reacción química."},
+            {"text": "Cambio de estado físico", "isCorrect": false, "rationale": "Eso describe cambio físico."},
+            {"text": "Aumento de temperatura sin cambio de composición", "isCorrect": false, "rationale": "No implica reacción química."},
+            {"text": "Cambio reversible de fase", "isCorrect": false, "rationale": "Las reacciones químicas no siempre son reversibles."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué representan los coeficientes estequiométricos en una ecuación química?",
+        "options": [
+            {"text": "Número relativo de moles o moléculas que reaccionan o se forman", "isCorrect": true, "rationale": "Relacionan cantidades proporcionales de cada sustancia."},
+            {"text": "Número absoluto de átomos en el sistema", "isCorrect": false, "rationale": "Representan proporciones, no cantidades absolutas."},
+            {"text": "Energía requerida para romper los enlaces químicos", "isCorrect": false, "rationale": "No tienen relación energética."},
+            {"text": "Velocidad a la que ocurre la reacción", "isCorrect": false, "rationale": "No expresan cinética química."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué se forma en una reacción de combustión incompleta de un hidrocarburo?",
+        "options": [
+            {"text": "Monóxido de carbono y agua", "isCorrect": true, "rationale": "La falta de oxígeno produce CO en lugar de CO₂."},
+            {"text": "Solo dióxido de carbono y agua", "isCorrect": false, "rationale": "Eso ocurre en combustión completa."},
+            {"text": "Carbono sólido y oxígeno molecular", "isCorrect": false, "rationale": "El oxígeno no queda libre en productos reales."},
+            {"text": "Hidrocarburos más pesados", "isCorrect": false, "rationale": "No se generan en combustiones incompletas."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué se entiende por reacción redox?",
+        "options": [
+            {"text": "Proceso en el cual ocurre transferencia de electrones entre especies químicas", "isCorrect": true, "rationale": "Definición esencial: oxidación y reducción simultáneas."},
+            {"text": "Reacción que involucra solo protones", "isCorrect": false, "rationale": "Eso describe ácidos y bases."},
+            {"text": "Cambio físico reversible de estado", "isCorrect": false, "rationale": "No involucra electrones."},
+            {"text": "Descomposición térmica de compuestos", "isCorrect": false, "rationale": "Puede no implicar redox."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es un agente reductor en una reacción redox?",
+        "options": [
+            {"text": "Sustancia que cede electrones y se oxida", "isCorrect": true, "rationale": "El agente reductor provoca la reducción de otra especie."},
+            {"text": "Sustancia que gana electrones y se reduce", "isCorrect": false, "rationale": "Eso corresponde al agente oxidante."},
+            {"text": "Compuesto que aumenta su número de oxidación al recibir electrones", "isCorrect": false, "rationale": "Recibir electrones implica reducirse."},
+            {"text": "Sustancia que cataliza una reacción redox", "isCorrect": false, "rationale": "No todos los catalizadores son reductores."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es un agente oxidante en una reacción redox?",
+        "options": [
+            {"text": "Sustancia que acepta electrones y se reduce", "isCorrect": true, "rationale": "Provoca la oxidación de otra especie."},
+            {"text": "Sustancia que cede electrones y se oxida", "isCorrect": false, "rationale": "Eso define un reductor."},
+            {"text": "Elemento con carga neutra que aumenta su número de oxidación", "isCorrect": false, "rationale": "Debe aceptar electrones, no aumentarlo."},
+            {"text": "Sustancia que no cambia su estado de oxidación", "isCorrect": false, "rationale": "Debe participar activamente en el intercambio electrónico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué se entiende por pureza de una muestra o material?",
+        "options": [
+            {"text": "Porcentaje en masa de la sustancia deseada respecto a la masa total de la muestra", "isCorrect": true, "rationale": "Definición cuantitativa estándar de pureza."},
+            {"text": "Cantidad de impurezas detectadas en la muestra", "isCorrect": false, "rationale": "Eso expresa contaminación, no pureza."},
+            {"text": "Número de moléculas idénticas por mol de sustancia", "isCorrect": false, "rationale": "Todos los moles tienen igual número de moléculas (Avogadro)."},
+            {"text": "Relación entre volumen de muestra y su masa", "isCorrect": false, "rationale": "Eso define densidad, no pureza."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es un reactivo limitante?",
+        "options": [
+            {"text": "Sustancia que se consume completamente y determina la cantidad máxima de producto", "isCorrect": true, "rationale": "El producto depende del reactivo limitante."},
+            {"text": "Reactivo presente en exceso en una reacción", "isCorrect": false, "rationale": "El exceso no limita la reacción."},
+            {"text": "Sustancia que ralentiza la velocidad de reacción", "isCorrect": false, "rationale": "Eso sería un inhibidor."},
+            {"text": "Producto intermedio que se forma parcialmente", "isCorrect": false, "rationale": "No corresponde al concepto de reactivo limitante."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa el rendimiento de una reacción química?",
+        "options": [
+            {"text": "Relación entre la cantidad obtenida de producto y la cantidad teórica esperada", "isCorrect": true, "rationale": "Define el porcentaje de eficiencia de la reacción."},
+            {"text": "Velocidad con que se produce un producto", "isCorrect": false, "rationale": "Eso pertenece a la cinética química."},
+            {"text": "Cantidad total de energía liberada por la reacción", "isCorrect": false, "rationale": "Eso describe el calor de reacción, no rendimiento."},
+            {"text": "Porcentaje de reactivos que permanecen sin reaccionar", "isCorrect": false, "rationale": "No define directamente el rendimiento."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es una reacción endotérmica y una exotérmica?",
+        "options": [
+            {"text": "Endotérmica: absorbe calor del entorno; Exotérmica: libera calor al entorno", "isCorrect": true, "rationale": "Definición fundamental basada en el flujo de energía térmica."},
+            {"text": "Endotérmica: aumenta la temperatura del sistema; Exotérmica: disminuye la temperatura del entorno", "isCorrect": false, "rationale": "Confunde sistema con entorno."},
+            {"text": "Endotérmica: libera energía; Exotérmica: la almacena", "isCorrect": false, "rationale": "Invierte el sentido del flujo energético."},
+            {"text": "Endotérmica: requiere catalizador; Exotérmica: no lo requiere", "isCorrect": false, "rationale": "El catalizador no define el tipo térmico de la reacción."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: H₂ + Cl₂ → 2HCl?",
+        "options": [
+            {"text": "Síntesis o combinación", "isCorrect": true, "rationale": "Dos reactivos simples se combinan para formar un solo producto."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "La descomposición parte de un solo compuesto hacia varios productos."},
+            {"text": "Desplazamiento simple", "isCorrect": false, "rationale": "No hay sustitución de elementos."},
+            {"text": "Combustión", "isCorrect": false, "rationale": "No interviene oxígeno como oxidante principal."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: 2H₂O₂ → 2H₂O + O₂?",
+        "options": [
+            {"text": "Descomposición", "isCorrect": true, "rationale": "Un solo compuesto se descompone en sustancias más simples."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Ocurre lo contrario de una combinación."},
+            {"text": "Desplazamiento doble", "isCorrect": false, "rationale": "No hay intercambio de iones."},
+            {"text": "Neutralización", "isCorrect": false, "rationale": "No intervienen ácido ni base."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: Zn + 2HCl → ZnCl₂ + H₂?",
+        "options": [
+            {"text": "Desplazamiento simple", "isCorrect": true, "rationale": "El zinc reemplaza al hidrógeno del ácido, formando H₂."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Se generan varios productos, no uno solo."},
+            {"text": "Neutralización", "isCorrect": false, "rationale": "Aunque participa un ácido, no hay base."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "No se rompe un solo compuesto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: HCl + NaOH → NaCl + H₂O?",
+        "options": [
+            {"text": "Neutralización o doble desplazamiento", "isCorrect": true, "rationale": "Ácido y base reaccionan formando sal y agua."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Involucra intercambio, no combinación directa."},
+            {"text": "Redox", "isCorrect": false, "rationale": "No hay cambio en los números de oxidación."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "No se rompe un solo compuesto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: CH₄ + 2O₂ → CO₂ + 2H₂O?",
+        "options": [
+            {"text": "Combustión completa", "isCorrect": true, "rationale": "El oxígeno oxida completamente el carbono a CO₂."},
+            {"text": "Combustión incompleta", "isCorrect": false, "rationale": "No se forma CO, sino CO₂."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "No se produce un solo producto."},
+            {"text": "Desplazamiento doble", "isCorrect": false, "rationale": "No hay intercambio iónico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: CH₄ + O₂ → CO + 2H₂O?",
+        "options": [
+            {"text": "Combustión incompleta", "isCorrect": true, "rationale": "La falta de oxígeno produce CO en lugar de CO₂."},
+            {"text": "Combustión completa", "isCorrect": false, "rationale": "El carbono no se oxida totalmente."},
+            {"text": "Desplazamiento simple", "isCorrect": false, "rationale": "No ocurre sustitución de elementos."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "Hay combinación de reactivos, no ruptura de uno solo."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: CuO + H₂ → Cu + H₂O?",
+        "options": [
+            {"text": "Reducción-oxidación (redox)", "isCorrect": true, "rationale": "El cobre se reduce y el hidrógeno se oxida."},
+            {"text": "Neutralización", "isCorrect": false, "rationale": "No participan ácido ni base."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Se forman varios productos, no uno solo."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "No parte de un único compuesto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O?",
+        "options": [
+            {"text": "Neutralización (doble desplazamiento)", "isCorrect": true, "rationale": "Ácido + base → sal + agua."},
+            {"text": "Redox", "isCorrect": false, "rationale": "Los números de oxidación no cambian."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Es un intercambio iónico, no combinación directa."},
+            {"text": "Descomposición", "isCorrect": false, "rationale": "No se separa un solo compuesto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué tipo de reacción es esta: AgNO₃ + NaCl → AgCl↓ + NaNO₃?",
+        "options": [
+            {"text": "Doble desplazamiento (precipitación)", "isCorrect": true, "rationale": "Intercambio de iones que forma un sólido insoluble."},
+            {"text": "Redox", "isCorrect": false, "rationale": "No hay transferencia de electrones."},
+            {"text": "Síntesis", "isCorrect": false, "rationale": "Se generan dos productos."},
+            {"text": "Combustión", "isCorrect": false, "rationale": "No hay oxidante ni liberación de energía térmica."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál de las siguientes ecuaciones son reacciones redox? Identificar los agentes oxidante y reductor.",
+        "options": [
+            {"text": "Ecuación 1: Zn + HCl → ZnCl₂ + H₂ → Redox (AO: H⁺; AR: Zn)", "isCorrect": true, "rationale": "El Zn se oxida y los protones del ácido se reducen."},
+            {"text": "Ecuación 2: CuSO₄ + Zn → ZnSO₄ + Cu → Redox (AO: Cu²⁺; AR: Zn)", "isCorrect": true, "rationale": "El Zn se oxida y el Cu²⁺ se reduce."},
+            {"text": "Ecuación 3: HCl + NaOH → NaCl + H₂O → No es redox", "isCorrect": false, "rationale": "Es una neutralización, no hay cambio en números de oxidación."},
+            {"text": "Solo la ecuación 3 es redox", "isCorrect": false, "rationale": "Incorrecto; no hay transferencia electrónica."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Balancear la siguiente ecuación redox en disolución acuosa: Sn²⁺(aq) + Fe³⁺(aq) → Sn⁴⁺(aq) + Fe²⁺(aq)",
+        "options": [
+            {"text": "Sn²⁺ + 2Fe³⁺ → Sn⁴⁺ + 2Fe²⁺", "isCorrect": true, "rationale": "Se igualan los electrones transferidos entre Sn y Fe."},
+            {"text": "2Sn²⁺ + Fe³⁺ → 2Sn⁴⁺ + Fe²⁺", "isCorrect": false, "rationale": "El número de electrones no se equilibra correctamente."},
+            {"text": "Sn²⁺ + Fe³⁺ → Sn⁴⁺ + Fe³⁺", "isCorrect": false, "rationale": "No conserva los estados de oxidación equilibrados."},
+            {"text": "Sn⁴⁺ + Fe²⁺ → Sn²⁺ + Fe³⁺", "isCorrect": false, "rationale": "Invierte las especies oxidadas y reducidas."}
+        ],
+        "hint": ""
+    }
+]
+
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+        "question": "Según Arrhenius, ¿qué característica define a un ácido en agua?",
+        "options": [
+            {"text": "Sustancia que libera H⁺ (protones) al disolverse en agua", "isCorrect": true, "rationale": "Definición clásica de Arrhenius."},
+            {"text": "Sustancia que acepta electrones", "isCorrect": false, "rationale": "Esto describe un agente oxidante, no un ácido Arrhenius."},
+            {"text": "Sustancia que libera OH⁻ al disolverse", "isCorrect": false, "rationale": "Eso define una base según Arrhenius."},
+            {"text": "Sustancia que actúa como neutralizante de bases", "isCorrect": false, "rationale": "Esto es consecuencia, no definición."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Según Arrhenius, ¿qué característica define a una base en agua?",
+        "options": [
+            {"text": "Sustancia que libera OH⁻ al disolverse en agua", "isCorrect": true, "rationale": "Definición clásica de Arrhenius para bases."},
+            {"text": "Sustancia que dona H⁺", "isCorrect": false, "rationale": "Eso corresponde a un ácido."},
+            {"text": "Sustancia que acepta electrones", "isCorrect": false, "rationale": "No define una base Arrhenius."},
+            {"text": "Sustancia que no reacciona con agua", "isCorrect": false, "rationale": "Una base debe interactuar con agua liberando OH⁻."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál es la principal diferencia entre la teoría de Arrhenius y la de Brønsted-Lowry?",
+        "options": [
+            {"text": "Arrhenius define ácidos y bases en términos de H⁺ y OH⁻ en agua, Brønsted-Lowry en términos de donación/aceptación de protones", "isCorrect": true, "rationale": "Brønsted-Lowry es más general y no requiere agua como solvente."},
+            {"text": "Arrhenius solo aplica a soluciones no acuosas, Brønsted-Lowry a acuosas", "isCorrect": false, "rationale": "Arrhenius solo aplica a acuosas, no lo contrario."},
+            {"text": "Brønsted-Lowry define bases como aceptores de electrones", "isCorrect": false, "rationale": "Brønsted-Lowry define bases como aceptores de protones, no electrones."},
+            {"text": "Arrhenius incluye los conceptos de pH y pOH", "isCorrect": false, "rationale": "pH y pOH se derivan, no forman la base de la definición."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "En la teoría de Brønsted-Lowry, ¿qué define a un ácido?",
+        "options": [
+            {"text": "Sustancia que dona protones (H⁺) a otra especie", "isCorrect": true, "rationale": "Definición central de Brønsted-Lowry."},
+            {"text": "Sustancia que acepta electrones", "isCorrect": false, "rationale": "Confusión con teoría de Lewis."},
+            {"text": "Sustancia que libera OH⁻", "isCorrect": false, "rationale": "Esto define una base Arrhenius, no un ácido Brønsted-Lowry."},
+            {"text": "Sustancia que neutraliza una base", "isCorrect": false, "rationale": "Es un efecto, no definición."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "En la teoría de Brønsted-Lowry, ¿qué define a una base?",
+        "options": [
+            {"text": "Sustancia que acepta protones (H⁺)", "isCorrect": true, "rationale": "Definición fundamental de Brønsted-Lowry."},
+            {"text": "Sustancia que dona electrones", "isCorrect": false, "rationale": "Teoría de Lewis, no Brønsted-Lowry."},
+            {"text": "Sustancia que libera H⁺", "isCorrect": false, "rationale": "Eso describe un ácido."},
+            {"text": "Sustancia que neutraliza un ácido", "isCorrect": false, "rationale": "Es consecuencia, no definición."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué significa que una sustancia sea anfótera?",
+        "options": [
+            {"text": "Puede actuar como ácido o base según el entorno", "isCorrect": true, "rationale": "Ejemplo clásico: agua, HCO₃⁻."},
+            {"text": "Solo puede actuar como ácido", "isCorrect": false, "rationale": "Contrario al concepto de anfótero."},
+            {"text": "Solo puede actuar como base", "isCorrect": false, "rationale": "Contrario al concepto de anfótero."},
+            {"text": "No reacciona con ácidos ni bases", "isCorrect": false, "rationale": "Una sustancia anfótera sí reacciona."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo actúa el agua como ácido según Brønsted-Lowry?",
+        "options": [
+            {"text": "Cede un protón (H⁺) a otra especie", "isCorrect": true, "rationale": "Por ejemplo: H₂O + NH₃ → OH⁻ + NH₄⁺."},
+            {"text": "Acepta un protón de otra especie", "isCorrect": false, "rationale": "Eso sería actuar como base."},
+            {"text": "Libera OH⁻ al disolverse", "isCorrect": false, "rationale": "Definición de base Arrhenius."},
+            {"text": "Se disocia completamente en H⁺ y OH⁻", "isCorrect": false, "rationale": "Esto ocurre solo parcialmente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo actúa el agua como base según Brønsted-Lowry?",
+        "options": [
+            {"text": "Acepta un protón (H⁺) de otra especie", "isCorrect": true, "rationale": "Por ejemplo: H₂O + HCl → H₃O⁺ + Cl⁻."},
+            {"text": "Libera un protón", "isCorrect": false, "rationale": "Eso sería actuar como ácido."},
+            {"text": "Se disocia en H⁺ y OH⁻ completamente", "isCorrect": false, "rationale": "Solo ocurre parcialmente a 25 °C."},
+            {"text": "No reacciona con ácidos", "isCorrect": false, "rationale": "Sí puede reaccionar con ácidos según Brønsted-Lowry."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál es la expresión del producto iónico del agua (Kw) y su valor a 25 °C?",
+        "options": [
+            {"text": "Kw = [H⁺][OH⁻] = 1 × 10⁻¹⁴", "isCorrect": true, "rationale": "Definición estándar a 25 °C."},
+            {"text": "Kw = [H⁺] + [OH⁻] = 1 × 10⁻¹⁴", "isCorrect": false, "rationale": "Kw se define como el producto, no la suma."},
+            {"text": "Kw = [H₂O] = 1 × 10⁻¹⁴", "isCorrect": false, "rationale": "No se mide la concentración del agua pura así."},
+            {"text": "Kw = [H₃O⁺]²", "isCorrect": false, "rationale": "No corresponde a la definición clásica de Kw."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Por qué el pH del agua pura es 7 si Kw = 1 × 10⁻¹⁴?",
+        "options": [
+            {"text": "Porque [H⁺] = [OH⁻] = 1 × 10⁻⁷ M, y pH = -log[H⁺] = 7", "isCorrect": true, "rationale": "El agua neutra tiene concentración igual de iones H⁺ y OH⁻."},
+            {"text": "Porque Kw = pH × pOH", "isCorrect": false, "rationale": "Kw no se multiplica por pH y pOH."},
+            {"text": "Porque el agua es un ácido fuerte", "isCorrect": false, "rationale": "El agua es neutra, no ácido fuerte."},
+            {"text": "Porque [H⁺] = Kw", "isCorrect": false, "rationale": "El valor de [H⁺] es la raíz cuadrada de Kw, no igual a Kw."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué caracteriza a un ácido fuerte?",
+        "options": [
+            {"text": "Se disocia completamente en solución acuosa", "isCorrect": true, "rationale": "Definición de ácido fuerte."},
+            {"text": "Se disocia parcialmente en solución acuosa", "isCorrect": false, "rationale": "Esto corresponde a ácidos débiles."},
+            {"text": "Tiene pKa mayor a 7", "isCorrect": false, "rationale": "Los ácidos fuertes tienen pKa muy bajos."},
+            {"text": "No libera protones en agua", "isCorrect": false, "rationale": "Todo ácido libera H⁺."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué caracteriza a una base fuerte?",
+        "options": [
+            {"text": "Se disocia completamente en solución acuosa", "isCorrect": true, "rationale": "Definición de base fuerte."},
+            {"text": "Se disocia parcialmente en solución acuosa", "isCorrect": false, "rationale": "Esto define una base débil."},
+            {"text": "Tiene pKb alto", "isCorrect": false, "rationale": "Las bases fuertes tienen pKb bajo."},
+            {"text": "No libera OH⁻ en agua", "isCorrect": false, "rationale": "Una base siempre produce OH⁻ en solución."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué caracteriza a un ácido débil?",
+        "options": [
+            {"text": "Se disocia parcialmente en solución acuosa", "isCorrect": true, "rationale": "Definición fundamental de ácido débil."},
+            {"text": "Se disocia completamente", "isCorrect": false, "rationale": "Esto define un ácido fuerte."},
+            {"text": "Tiene pKa muy bajo", "isCorrect": false, "rationale": "Ácidos débiles tienen pKa moderado o alto."},
+            {"text": "No libera H⁺", "isCorrect": false, "rationale": "Todos los ácidos liberan H⁺, aunque parcialmente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué caracteriza a una base débil?",
+        "options": [
+            {"text": "Se disocia parcialmente en solución acuosa", "isCorrect": true, "rationale": "Definición de base débil."},
+            {"text": "Se disocia completamente", "isCorrect": false, "rationale": "Esto define base fuerte."},
+            {"text": "Tiene pKb muy bajo", "isCorrect": false, "rationale": "Base débil tiene pKb alto o moderado."},
+            {"text": "No libera OH⁻", "isCorrect": false, "rationale": "Aunque parcialmente, siempre produce OH⁻."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se expresa la constante de acidez (Ka) para un ácido débil?",
+        "options": [
+            {"text": "Ka = [H⁺][A⁻]/[HA]", "isCorrect": true, "rationale": "Expresión estándar de Ka."},
+            {"text": "Ka = [HA]/[H⁺][A⁻]", "isCorrect": false, "rationale": "Invierte los términos; incorrecto."},
+            {"text": "Ka = [OH⁻][A⁻]/[HA]", "isCorrect": false, "rationale": "No interviene OH⁻ en Ka."},
+            {"text": "Ka = [H⁺][HA]/[A⁻]", "isCorrect": false, "rationale": "No corresponde a la definición correcta."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se expresa la constante de basicidad (Kb) para una base débil?",
+        "options": [
+            {"text": "Kb = [BH⁺][OH⁻]/[B]", "isCorrect": true, "rationale": "Expresión estándar de Kb para bases."},
+            {"text": "Kb = [B]/[BH⁺][OH⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Kb = [H⁺][B]/[BH⁺]", "isCorrect": false, "rationale": "No se usa H⁺ para Kb."},
+            {"text": "Kb = [OH⁻]/[B]", "isCorrect": false, "rationale": "Falta incluir el ácido conjugado BH⁺."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se relacionan Ka y Kb para un par ácido-base conjugado?",
+        "options": [
+            {"text": "Ka × Kb = Kw", "isCorrect": true, "rationale": "Relación fundamental para pares conjugados."},
+            {"text": "Ka + Kb = Kw", "isCorrect": false, "rationale": "La relación es multiplicativa, no aditiva."},
+            {"text": "Ka / Kb = Kw", "isCorrect": false, "rationale": "No corresponde la división."},
+            {"text": "Ka = Kb", "isCorrect": false, "rationale": "Solo ocurre en casos específicos, no general."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se relacionan pKa y pKb para un par ácido-base conjugado?",
+        "options": [
+            {"text": "pKa + pKb = 14", "isCorrect": true, "rationale": "Relación derivada de Kw a 25 °C."},
+            {"text": "pKa - pKb = 14", "isCorrect": false, "rationale": "Es suma, no resta."},
+            {"text": "pKa × pKb = 14", "isCorrect": false, "rationale": "No se multiplican pKa y pKb."},
+            {"text": "pKa = pKb", "isCorrect": false, "rationale": "Solo si ácido y base tienen la misma fuerza, no general."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué indica el grado de disociación (α) de un ácido o base?",
+        "options": [
+            {"text": "Fracción de moléculas que se disocian en solución", "isCorrect": true, "rationale": "α = [mol disociado]/[mol inicial]."},
+            {"text": "Concentración total de ácido o base", "isCorrect": false, "rationale": "Eso no refleja la fracción disociada."},
+            {"text": "pH de la solución", "isCorrect": false, "rationale": "El pH depende de α, pero no es α."},
+            {"text": "Constante de disociación Ka o Kb", "isCorrect": false, "rationale": "Ka y Kb son constantes, α es variable."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se define la fuerza ácida de un soluto en agua?",
+        "options": [
+            {"text": "Por su capacidad de disociarse y liberar H⁺", "isCorrect": true, "rationale": "Mayor disociación → ácido más fuerte."},
+            {"text": "Por su capacidad de aceptar protones", "isCorrect": false, "rationale": "Eso define una base."},
+            {"text": "Por su solubilidad en agua", "isCorrect": false, "rationale": "No determina fuerza ácida."},
+            {"text": "Por su concentración inicial", "isCorrect": false, "rationale": "Concentración no define fuerza."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se define la fuerza básica de un soluto en agua?",
+        "options": [
+            {"text": "Por su capacidad de aceptar protones o generar OH⁻", "isCorrect": true, "rationale": "Mayor capacidad → base más fuerte."},
+            {"text": "Por su capacidad de donar protones", "isCorrect": false, "rationale": "Eso define ácido."},
+            {"text": "Por su solubilidad en agua", "isCorrect": false, "rationale": "No determina fuerza básica."},
+            {"text": "Por su concentración inicial", "isCorrect": false, "rationale": "Concentración no define fuerza."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué información nos da el pH de una solución sobre su acidez?",
+        "options": [
+            {"text": "Concentración de H⁺ y acidez relativa de la solución", "isCorrect": true, "rationale": "pH = -log[H⁺]."},
+            {"text": "Concentración de OH⁻", "isCorrect": false, "rationale": "Eso se relaciona con pOH."},
+            {"text": "Concentración de soluto total", "isCorrect": false, "rationale": "No indica acidez."},
+            {"text": "Constante de disociación Ka", "isCorrect": false, "rationale": "Ka se puede inferir pero pH no la define directamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué información nos da la pOH de una solución sobre su basicidad?",
+        "options": [
+            {"text": "Concentración de OH⁻ y basicidad relativa", "isCorrect": true, "rationale": "pOH = -log[OH⁻]."},
+            {"text": "Concentración de H⁺", "isCorrect": false, "rationale": "Eso se relaciona con pH, no pOH."},
+            {"text": "Concentración de ácido total", "isCorrect": false, "rationale": "No indica basicidad."},
+            {"text": "Constante de disociación Kb", "isCorrect": false, "rationale": "Kb se puede inferir pero pOH no la define directamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Qué es una solución reguladora de pH (buffer)?",
+        "options": [
+            {"text": "Mezcla de ácido débil y su base conjugada que resiste cambios de pH", "isCorrect": true, "rationale": "Un buffer minimiza variaciones de pH al añadir H⁺ o OH⁻."},
+            {"text": "Solución de ácido fuerte en agua", "isCorrect": false, "rationale": "Un ácido fuerte no funciona como buffer."},
+            {"text": "Solución de base fuerte en agua", "isCorrect": false, "rationale": "Una base fuerte no forma buffer."},
+            {"text": "Solución que cambia mucho de pH con pequeñas adiciones", "isCorrect": false, "rationale": "Eso es lo contrario de un buffer."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo actúa una solución reguladora ante la adición de H⁺?",
+        "options": [
+            {"text": "La base conjugada del buffer reacciona con H⁺ minimizando el cambio de pH", "isCorrect": true, "rationale": "Principio fundamental de los buffers ácido-base."},
+            {"text": "El ácido del buffer cede más H⁺", "isCorrect": false, "rationale": "Esto aumentaría el pH en lugar de estabilizarlo."},
+            {"text": "Se neutraliza automáticamente sin reacción química", "isCorrect": false, "rationale": "Siempre hay reacción entre ácido/base conjugados."},
+            {"text": "El pH cambia drásticamente", "isCorrect": false, "rationale": "El objetivo de un buffer es evitar esto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo actúa una solución reguladora ante la adición de OH⁻?",
+        "options": [
+            {"text": "El ácido del buffer dona H⁺ para neutralizar OH⁻, estabilizando el pH", "isCorrect": true, "rationale": "Acción típica de un buffer frente a base añadida."},
+            {"text": "La base del buffer se combina con OH⁻ liberando H⁺", "isCorrect": false, "rationale": "Sería redundante y incorrecto."},
+            {"text": "Se diluye la solución", "isCorrect": false, "rationale": "La dilución no neutraliza OH⁻."},
+            {"text": "El pH sube inmediatamente", "isCorrect": false, "rationale": "Un buffer evita este cambio drástico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cuál es la condición de relación ácido/base conjugado para preparar un buffer?",
+        "options": [
+            {"text": "La concentración de ácido y base conjugada debe ser similar", "isCorrect": true, "rationale": "Para que el buffer funcione de manera óptima."},
+            {"text": "Solo se necesita ácido fuerte", "isCorrect": false, "rationale": "No forma buffer."},
+            {"text": "Solo se necesita base fuerte", "isCorrect": false, "rationale": "No forma buffer."},
+            {"text": "Debe haber exceso de H⁺", "isCorrect": false, "rationale": "Esto desbalancea el buffer."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se calcula el pH de un buffer usando la ecuación de Henderson-Hasselbalch?",
+        "options": [
+            {"text": "pH = pKa + log([base]/[ácido])", "isCorrect": true, "rationale": "Ecuación clásica para buffers ácido-base conjugados."},
+            {"text": "pH = pKa + log([ácido]/[base])", "isCorrect": false, "rationale": "Se invierte la relación de concentración."},
+            {"text": "pH = -log([H⁺])", "isCorrect": false, "rationale": "Es general, no específica para buffers."},
+            {"text": "pH = pKa - log([base]/[ácido])", "isCorrect": false, "rationale": "El signo de la logaritmo está mal."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si en un buffer [base] = [ácido], ¿cuál es la relación entre pH y pKa?",
+        "options": [
+            {"text": "pH = pKa", "isCorrect": true, "rationale": "Log(1) = 0, por lo tanto pH = pKa."},
+            {"text": "pH > pKa", "isCorrect": false, "rationale": "Esto ocurre cuando [base] > [ácido]."},
+            {"text": "pH < pKa", "isCorrect": false, "rationale": "Esto ocurre cuando [base] < [ácido]."},
+            {"text": "pH = 7 siempre", "isCorrect": false, "rationale": "Solo si pKa = 7."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si en un buffer [base] > [ácido], ¿cómo se compara el pH con el pKa?",
+        "options": [
+            {"text": "pH > pKa", "isCorrect": true, "rationale": "Mayor concentración de base eleva el pH."},
+            {"text": "pH = pKa", "isCorrect": false, "rationale": "Solo si [base] = [ácido]."},
+            {"text": "pH < pKa", "isCorrect": false, "rationale": "Eso ocurre si [base] < [ácido]."},
+            {"text": "pH = 7", "isCorrect": false, "rationale": "No necesariamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si en un buffer [base] < [ácido], ¿cómo se compara el pH con el pKa?",
+        "options": [
+            {"text": "pH < pKa", "isCorrect": true, "rationale": "Mayor concentración de ácido baja el pH."},
+            {"text": "pH = pKa", "isCorrect": false, "rationale": "Solo si [base] = [ácido]."},
+            {"text": "pH > pKa", "isCorrect": false, "rationale": "Eso ocurre si [base] > [ácido]."},
+            {"text": "pH = 7", "isCorrect": false, "rationale": "No necesariamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de NH₃ con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "NH₃ + H₂O ⇌ NH₄⁺ + OH⁻ (Ácido: H₂O → OH⁻, Base: NH₃ → NH₄⁺)", "isCorrect": true, "rationale": "NH₃ acepta un protón y H₂O dona un protón."},
+            {"text": "NH₃ + H₂O → NH₄⁺ + OH⁻ (sin equilibrio)", "isCorrect": false, "rationale": "La reacción es reversible, no completa."},
+            {"text": "NH₃ + H₂O ⇌ NH₃⁺ + OH⁻", "isCorrect": false, "rationale": "No existe NH₃⁺ en esta reacción."},
+            {"text": "NH₃ + H₂O ⇌ NH₄⁺ + H₂O", "isCorrect": false, "rationale": "OH⁻ es el producto correcto, no H₂O."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de basicidad Kb para NH₃",
+        "options": [
+            {"text": "Kb = [NH₄⁺][OH⁻]/[NH₃]", "isCorrect": true, "rationale": "Definición de Kb para bases débiles."},
+            {"text": "Kb = [NH₃]/[NH₄⁺][OH⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Kb = [H⁺][OH⁻]/[NH₃]", "isCorrect": false, "rationale": "H⁺ no participa en Kb para NH₃."},
+            {"text": "Kb = [NH₄⁺]/[NH₃]", "isCorrect": false, "rationale": "Falta considerar [OH⁻]."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de NO₂⁻ con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "NO₂⁻ + H₂O ⇌ HNO₂ + OH⁻ (Ácido: H₂O → OH⁻, Base: NO₂⁻ → HNO₂)", "isCorrect": true, "rationale": "NO₂⁻ acepta H⁺ de H₂O."},
+            {"text": "NO₂⁻ + H₂O → HNO₂ + OH⁻", "isCorrect": false, "rationale": "La reacción es reversible."},
+            {"text": "NO₂⁻ + H₂O ⇌ NO₂H + OH⁻", "isCorrect": false, "rationale": "No se forma NO₂H."},
+            {"text": "NO₂⁻ + H₂O ⇌ HNO₃ + OH⁻", "isCorrect": false, "rationale": "Se forma HNO₂, no HNO₃."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de basicidad Kb para NO₂⁻",
+        "options": [
+            {"text": "Kb = [HNO₂][OH⁻]/[NO₂⁻]", "isCorrect": true, "rationale": "Definición de Kb para esta base débil."},
+            {"text": "Kb = [NO₂⁻]/[HNO₂][OH⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Kb = [H⁺][OH⁻]/[NO₂⁻]", "isCorrect": false, "rationale": "H⁺ no participa en Kb."},
+            {"text": "Kb = [OH⁻]/[NO₂⁻]", "isCorrect": false, "rationale": "Falta incluir el ácido conjugado HNO₂."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de C₆H₅NH₂ (anilina) con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "C₆H₅NH₂ + H₂O ⇌ C₆H₅NH₃⁺ + OH⁻ (Ácido: H₂O → OH⁻, Base: C₆H₅NH₂ → C₆H₅NH₃⁺)", "isCorrect": true, "rationale": "La anilina actúa como base débil."},
+            {"text": "C₆H₅NH₂ + H₂O ⇌ C₆H₅NH⁺ + OH⁻", "isCorrect": false, "rationale": "No existe C₆H₅NH⁺, se forma C₆H₅NH₃⁺."},
+            {"text": "C₆H₅NH₂ + H₂O → C₆H₅NH₃⁺ + OH⁻", "isCorrect": false, "rationale": "La reacción es reversible, no completa."},
+            {"text": "C₆H₅NH₂ + H₂O ⇌ C₆H₅NH₂⁺ + OH⁻", "isCorrect": false, "rationale": "No se forma NH₂⁺."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de basicidad Kb para C₆H₅NH₂",
+        "options": [
+            {"text": "Kb = [C₆H₅NH₃⁺][OH⁻]/[C₆H₅NH₂]", "isCorrect": true, "rationale": "Kb para base débil según definición."},
+            {"text": "Kb = [C₆H₅NH₂]/[C₆H₅NH₃⁺][OH⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Kb = [OH⁻]/[C₆H₅NH₂]", "isCorrect": false, "rationale": "Falta considerar el ácido conjugado."},
+            {"text": "Kb = [H⁺][C₆H₅NH₃⁺]/[C₆H₅NH₂]", "isCorrect": false, "rationale": "No se usa H⁺ para base débil."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de CH₃COO⁻ (acetato) con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "CH₃COO⁻ + H₂O ⇌ CH₃COOH + OH⁻ (Ácido: H₂O → OH⁻, Base: CH₃COO⁻ → CH₃COOH)", "isCorrect": true, "rationale": "Acetato actúa como base débil."},
+            {"text": "CH₃COO⁻ + H₂O ⇌ CH₃COO⁺ + OH⁻", "isCorrect": false, "rationale": "No se forma CH₃COO⁺."},
+            {"text": "CH₃COO⁻ + H₂O → CH₃COOH + OH⁻", "isCorrect": false, "rationale": "Reacción reversible, no completa."},
+            {"text": "CH₃COO⁻ + H₂O ⇌ CH₃COO⁻ + H₂O", "isCorrect": false, "rationale": "No ocurre cambio químico."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de basicidad Kb para CH₃COO⁻",
+        "options": [
+            {"text": "Kb = [CH₃COOH][OH⁻]/[CH₃COO⁻]", "isCorrect": true, "rationale": "Definición estándar de Kb para esta base débil."},
+            {"text": "Kb = [CH₃COO⁻]/[CH₃COOH][OH⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Kb = [OH⁻]/[CH₃COO⁻]", "isCorrect": false, "rationale": "Falta el ácido conjugado."},
+            {"text": "Kb = [CH₃COOH]/[CH₃COO⁻]", "isCorrect": false, "rationale": "Falta considerar OH⁻."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de HNO₂ con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "HNO₂ + H₂O ⇌ NO₂⁻ + H₃O⁺ (Ácido: HNO₂ → NO₂⁻, Base: H₂O → H₃O⁺)", "isCorrect": true, "rationale": "HNO₂ actúa como ácido débil."},
+            {"text": "HNO₂ + H₂O ⇌ NO₂ + H₃O⁺", "isCorrect": false, "rationale": "No se forma NO₂ neutro en agua."},
+            {"text": "HNO₂ + H₂O → NO₂⁻ + H₃O⁺", "isCorrect": false, "rationale": "Reacción reversible, no completa."},
+            {"text": "HNO₂ + H₂O ⇌ HNO₂ + OH⁻", "isCorrect": false, "rationale": "OH⁻ no es producto en ácido débil."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de acidez Ka para HNO₂",
+        "options": [
+            {"text": "Ka = [H₃O⁺][NO₂⁻]/[HNO₂]", "isCorrect": true, "rationale": "Definición de Ka para ácido débil."},
+            {"text": "Ka = [HNO₂]/[H₃O⁺][NO₂⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Ka = [H⁺]/[HNO₂]", "isCorrect": false, "rationale": "Falta considerar base conjugada."},
+            {"text": "Ka = [H₃O⁺]/[NO₂⁻]", "isCorrect": false, "rationale": "Falta HNO₂ en el denominador."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de HF con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "HF + H₂O ⇌ F⁻ + H₃O⁺ (Ácido: HF → F⁻, Base: H₂O → H₃O⁺)", "isCorrect": true, "rationale": "HF es un ácido débil."},
+            {"text": "HF + H₂O ⇌ HF₂ + OH⁻", "isCorrect": false, "rationale": "No ocurre formación de HF₂ en agua diluida."},
+            {"text": "HF + H₂O → F⁻ + H₃O⁺", "isCorrect": false, "rationale": "Reacción reversible, no completa."},
+            {"text": "HF + H₂O ⇌ HF + OH⁻", "isCorrect": false, "rationale": "OH⁻ no es producto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de acidez Ka para HF",
+        "options": [
+            {"text": "Ka = [H₃O⁺][F⁻]/[HF]", "isCorrect": true, "rationale": "Ka estándar para ácido débil."},
+            {"text": "Ka = [HF]/[H₃O⁺][F⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Ka = [H⁺]/[HF]", "isCorrect": false, "rationale": "Falta F⁻ en la expresión."},
+            {"text": "Ka = [H₃O⁺]/[F⁻]", "isCorrect": false, "rationale": "Falta HF en denominador."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de HBrO con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "HBrO + H₂O ⇌ BrO⁻ + H₃O⁺", "isCorrect": true, "rationale": "HBrO actúa como ácido débil."},
+            {"text": "HBrO + H₂O → BrO + H₃O⁺", "isCorrect": false, "rationale": "No se forma BrO neutro."},
+            {"text": "HBrO + H₂O ⇌ HBrO + OH⁻", "isCorrect": false, "rationale": "OH⁻ no es producto."},
+            {"text": "HBrO + H₂O ⇌ BrO⁺ + OH⁻", "isCorrect": false, "rationale": "No se forma BrO⁺."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de acidez Ka para HBrO",
+        "options": [
+            {"text": "Ka = [H₃O⁺][BrO⁻]/[HBrO]", "isCorrect": true, "rationale": "Definición de Ka para ácido débil."},
+            {"text": "Ka = [HBrO]/[H₃O⁺][BrO⁻]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Ka = [H⁺]/[HBrO]", "isCorrect": false, "rationale": "Falta BrO⁻."},
+            {"text": "Ka = [H₃O⁺]/[BrO⁻]", "isCorrect": false, "rationale": "Falta HBrO en denominador."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Escribir la reacción de CH₃COOH con agua, identificando los pares ácido-base conjugados",
+        "options": [
+            {"text": "CH₃COOH + H₂O ⇌ CH₃COO⁻ + H₃O⁺", "isCorrect": true, "rationale": "Ácido acético actúa como ácido débil."},
+            {"text": "CH₃COOH + H₂O ⇌ CH₃COOH₂⁺ + OH⁻", "isCorrect": false, "rationale": "No se forma CH₃COOH₂⁺."},
+            {"text": "CH₃COOH + H₂O → CH₃COO⁻ + H₃O⁺", "isCorrect": false, "rationale": "Reacción reversible, no completa."},
+            {"text": "CH₃COOH + H₂O ⇌ CH₃COOH + OH⁻", "isCorrect": false, "rationale": "OH⁻ no es producto en ácido débil."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Expresar la constante de acidez Ka para CH₃COOH",
+        "options": [
+            {"text": "Ka = [CH₃COO⁻][H₃O⁺]/[CH₃COOH]", "isCorrect": true, "rationale": "Definición estándar de Ka."},
+            {"text": "Ka = [CH₃COOH]/[CH₃COO⁻][H₃O⁺]", "isCorrect": false, "rationale": "Invierte los términos."},
+            {"text": "Ka = [H⁺]/[CH₃COOH]", "isCorrect": false, "rationale": "Falta CH₃COO⁻."},
+            {"text": "Ka = [H₃O⁺]/[CH₃COO⁻]", "isCorrect": false, "rationale": "Falta CH₃COOH en denominador."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Calcular la constante de acidez Ka a partir de molaridad y pH (ejemplo: CH₃CH₂COOH, pH = 2,93, 0,100 M)",
+        "options": [
+            {"text": "Ka = [H⁺]² / ([CH₃CH₂COOH] - [H⁺])", "isCorrect": true, "rationale": "Fórmula derivada de [H⁺] y concentración inicial."},
+            {"text": "Ka = [H⁺] / [CH₃CH₂COOH]", "isCorrect": false, "rationale": "No considera que solo parte del ácido se disocia."},
+            {"text": "Ka = [H⁺]² / [CH₃CH₂COOH]", "isCorrect": false, "rationale": "Falta restar la concentración de ácido sin disociar."},
+            {"text": "Ka = [H⁺]", "isCorrect": false, "rationale": "No es Ka, solo concentración de H⁺."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Calcular el pH de un ácido débil a partir de Ka y su concentración",
+        "options": [
+            {"text": "pH = -log([H⁺]) con [H⁺] = √(Ka × [HA])", "isCorrect": true, "rationale": "Fórmula aproximada para ácido débil."},
+            {"text": "pH = -log(Ka)", "isCorrect": false, "rationale": "Ka solo da fuerza, no pH directamente."},
+            {"text": "pH = -log([HA])", "isCorrect": false, "rationale": "No considera disociación parcial."},
+            {"text": "pH = Ka × [HA]", "isCorrect": false, "rationale": "Incorrecto concepto."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Calcular la concentración (% m/V) de una solución de HI con pH = 4,52",
+        "options": [
+            {"text": "% m/V = [H⁺] × 100 g/L", "isCorrect": true, "rationale": "Se obtiene [H⁺] del pH y se convierte a porcentaje m/V."},
+            {"text": "% m/V = pH × 10", "isCorrect": false, "rationale": "No se calcula así el % m/V."},
+            {"text": "% m/V = 10^(-pH)", "isCorrect": false, "rationale": "Esto da concentración en M, no % m/V."},
+            {"text": "% m/V = [OH⁻] × 100 g/L", "isCorrect": false, "rationale": "HI es ácido, no base."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Una solución de ácido fuerte siempre tiene menor pH que una solución de ácido débil de igual concentración: ¿verdadero o falso?",
+        "options": [
+            {"text": "Verdadero", "isCorrect": true, "rationale": "Ácido fuerte se disocia completamente, ácido débil parcialmente."},
+            {"text": "Falso", "isCorrect": false, "rationale": "Esto contradice la definición de fuerza ácida."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Una solución de ácido muy débil (pKa > 13) puede tener pH > 7 a 25 °C: ¿verdadero o falso?",
+        "options": [
+            {"text": "Verdadero", "isCorrect": true, "rationale": "Ácidos extremadamente débiles prácticamente no alteran el pH del agua."},
+            {"text": "Falso", "isCorrect": false, "rationale": "El pH puede superar 7 si el ácido es muy débil."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "En una solución de base débil, ¿siempre se cumple que pOH > pH?",
+        "options": [
+            {"text": "Falso", "isCorrect": true, "rationale": "Depende de la concentración; no siempre pOH > pH."},
+            {"text": "Verdadero", "isCorrect": false, "rationale": "No es regla general."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si un ácido fuerte se disocia completamente, ¿el grado de disociación α es cercano a 0 o a 1?",
+        "options": [
+            {"text": "α ≈ 1", "isCorrect": true, "rationale": "Completa disociación implica α cercano a 1."},
+            {"text": "α ≈ 0", "isCorrect": false, "rationale": "Esto corresponde a ácido muy débil."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "Si un ácido débil se disocia parcialmente, ¿el grado de disociación α es cercano a 0 o a 1?",
+        "options": [
+            {"text": "α ≈ 0", "isCorrect": true, "rationale": "Ácido débil se disocia parcialmente, α bajo."},
+            {"text": "α ≈ 1", "isCorrect": false, "rationale": "Esto corresponde a ácido fuerte."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se relaciona la fuerza de un ácido con el valor de su pKa?",
+        "options": [
+            {"text": "Menor pKa → ácido más fuerte", "isCorrect": true, "rationale": "pKa bajo indica mayor facilidad para donar protones."},
+            {"text": "Mayor pKa → ácido más fuerte", "isCorrect": false, "rationale": "Esto es al revés."},
+            {"text": "pKa no se relaciona con fuerza", "isCorrect": false, "rationale": "Incorrecto, pKa define fuerza ácida."},
+            {"text": "pKa = 7 → ácido más fuerte", "isCorrect": false, "rationale": "pKa neutro no indica fuerza alta."}
+        ],
+        "hint": ""
+    },
+    {
+        "question": "¿Cómo se relaciona la fuerza de una base con el valor de su pKb?",
+        "options": [
+            {"text": "Menor pKb → base más fuerte", "isCorrect": true, "rationale": "pKb bajo indica mayor capacidad para aceptar protones."},
+            {"text": "Mayor pKb → base más fuerte", "isCorrect": false, "rationale": "Esto es al revés."},
+            {"text": "pKb no se relaciona con fuerza", "isCorrect": false, "rationale": "Incorrecto, pKb define fuerza básica."},
+            {"text": "pKb = 7 → base más fuerte", "isCorrect": false, "rationale": "No indica fuerza alta."}
+        ],
+        "hint": ""
+    }
+]
+
+
+
+        console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>
