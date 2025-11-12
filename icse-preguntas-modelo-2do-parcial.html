@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "id": 207,
+    "question": "Explique la transición que vive la República Argentina durante la década del 30. Restauración oligárquica en lo político y cambios en la estructura socioeconómica (ISI).",
+    "options": [
+      {"text": "Se inicia una etapa democrática plena con la expansión del voto femenino.", "isCorrect": false, "rationale": "El voto femenino recién se aprueba en 1947, no en los años 30."},
+      {"text": "Se consolida una restauración conservadora con fraude electoral y comienza la industrialización por sustitución de importaciones.", "isCorrect": true, "rationale": "Describe la restauración oligárquica y el inicio de la ISI tras la crisis del 30."},
+      {"text": "El país se integra al bloque socialista y nacionaliza los medios de producción.", "isCorrect": false, "rationale": "No hubo integración al bloque socialista ni nacionalizaciones en esta etapa."},
+      {"text": "Predomina un modelo exportador sin cambios económicos significativos.", "isCorrect": false, "rationale": "El modelo agroexportador entra en crisis, surgiendo la ISI como respuesta."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 208,
+    "question": "Explique el modelo político, económico y social del peronismo durante la etapa 1946-1955.",
+    "options": [
+      {"text": "Modelo liberal con libre comercio y mínima intervención estatal.", "isCorrect": false, "rationale": "El peronismo promovió una fuerte intervención estatal, no el liberalismo."},
+      {"text": "Etapa de apertura económica y alianzas con Estados Unidos.", "isCorrect": false, "rationale": "El peronismo buscó independencia económica y políticas nacionalistas."},
+      {"text": "Modelo populista con justicia social, intervención estatal y ampliación de derechos laborales.", "isCorrect": true, "rationale": "Define los ejes del peronismo clásico: justicia social, independencia económica y soberanía política."},
+      {"text": "Gobierno militar de transición hacia la democracia liberal.", "isCorrect": false, "rationale": "Fue un gobierno constitucional, no militar."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 209,
+    "question": "Explique la fórmula semidemocrática implementada en Argentina desde 1958. ¿A qué se refiere el autor cuando habla de 'parlamentarismo negro'?",
+    "options": [
+        {"text": "Un sistema con elecciones limitadas donde el poder real lo ejercían las Fuerzas Armadas.", "isCorrect": true, "rationale": "La 'semidemocracia' combinó instituciones democráticas con control militar ('parlamentarismo negro')."},
+      {"text": "Sistema democrático pleno con participación de todos los partidos políticos.", "isCorrect": false, "rationale": "El peronismo seguía proscripto, por lo que no era democracia plena."},
+      {"text": "Un gobierno parlamentario basado en el control del Congreso sobre el Ejecutivo.", "isCorrect": false, "rationale": "No existió un régimen parlamentario formal en Argentina."},
+      {"text": "Una etapa de dictadura cívico-militar sin elecciones.", "isCorrect": false, "rationale": "Sí hubo elecciones, aunque restringidas y tuteladas por los militares."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 210,
+    "question": "Explique el proyecto de Integración y Desarrollo de Arturo Frondizi y las causas de su fracaso.",
+    "options": [
+        {"text": "Aplicó un modelo socialista con nacionalización de empresas y reforma agraria.", "isCorrect": false, "rationale": "Frondizi no aplicó políticas socialistas ni nacionalizaciones amplias."},
+        {"text": "Promovió la apertura total al comercio internacional y reducción del Estado.", "isCorrect": false, "rationale": "Buscó desarrollo industrial interno, no apertura total."},
+        {"text": "Su plan fracasó por la falta de apoyo de Estados Unidos en la Guerra Fría.", "isCorrect": false, "rationale": "El conflicto fue interno: militares y sectores sindicales."},
+        {"text": "Buscó atraer inversiones extranjeras y desarrollar la industria, pero cayó por la oposición militar y sindical.", "isCorrect": true, "rationale": "Frondizi impulsó la industrialización con capital extranjero, pero su política fue resistida por las FFAA y sindicatos."},
+    ],
+    "hint": ""
+  },
+  {
+    "id": 211,
+    "question": "En la etapa 1966-1973 se implementa una fórmula de tipo autoritaria. Explique sus principales características.",
+    "options": [
+      {"text": "Supresión de partidos políticos, censura, intervención universitaria y gobierno militar.", "isCorrect": true, "rationale": "Definió la dictadura de Onganía y sucesores: autoritarismo, represión y eliminación de la vida política."},
+      {"text": "Ampliación de derechos políticos y sociales bajo control sindical.", "isCorrect": false, "rationale": "Fue una etapa de restricción política, no de ampliación de derechos."},
+      {"text": "Sistema mixto con participación obrera en el gobierno.", "isCorrect": false, "rationale": "Los sindicatos fueron reprimidos, no integrados al poder."},
+      {"text": "Gobierno civil elegido democráticamente.", "isCorrect": false, "rationale": "Fue un gobierno militar sin elecciones."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 212,
+    "question": "Describe los objetivos de la política económica durante el Gobierno de facto de Juan Carlos Onganía.",
+    "options": [
+      {"text": "Modernizar la economía, controlar la inflación y atraer inversión extranjera.", "isCorrect": true, "rationale": "El ministro Krieger Vasena impulsó estabilización y apertura al capital extranjero."},
+      {"text": "Repartir la tierra y estatizar la industria nacional.", "isCorrect": false, "rationale": "No hubo políticas redistributivas ni estatización masiva."},
+      {"text": "Aumentar el gasto público para estimular el consumo interno.", "isCorrect": false, "rationale": "Buscó lo contrario: ajuste y control salarial."},
+      {"text": "Eliminar toda relación con organismos financieros internacionales.", "isCorrect": false, "rationale": "Mantuvo y fortaleció esos vínculos."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 213,
+    "question": "¿Por qué se piensa el 'Cordobazo' como el inicio de una crisis de dominación?",
+    "options": [
+        {"text": "Porque consolidó el poder del gobierno militar frente a las protestas.", "isCorrect": false, "rationale": "Fue lo contrario: debilitó al régimen."},
+        {"text": "Porque evidenció la pérdida de control del régimen militar frente a obreros y estudiantes.", "isCorrect": true, "rationale": "El Cordobazo de 1969 marcó el inicio del fin del régimen de Onganía por la movilización social masiva."},
+      {"text": "Porque instauró un nuevo orden político democrático.", "isCorrect": false, "rationale": "La democracia no se restableció hasta 1973."},
+      {"text": "Porque generó un acuerdo entre militares y sindicatos.", "isCorrect": false, "rationale": "No hubo acuerdo, sino enfrentamiento."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 214,
+    "question": "¿Cuáles son, cómo nacen y qué objetivos persiguen los jóvenes que organizan la lucha armada en la Argentina?",
+    "options": [
+        {"text": "Nacen como movimientos sindicales moderados en defensa de los empresarios nacionales.", "isCorrect": false, "rationale": "Su carácter fue revolucionario, no empresarial."},
+        {"text": "Forman parte del ejército regular argentino durante la dictadura.", "isCorrect": false, "rationale": "Fueron organizaciones clandestinas enfrentadas al Estado."},
+        {"text": "Surgen en los 60 y 70 inspirados por el marxismo y el peronismo revolucionario, buscando una sociedad más justa.", "isCorrect": true, "rationale": "Grupos como Montoneros o el ERP nacen en ese contexto, combinando ideología revolucionaria y lucha armada."},
+      {"text": "Buscan instaurar un régimen militar autoritario.", "isCorrect": false, "rationale": "Su objetivo era revolucionario y anti-militar."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 215,
+    "question": "¿Cuál es el eje de la lucha política durante la tercera presidencia peronista? ¿Qué rol juega el sindicalismo y cuál la juventud peronista?",
+    "options": [
+        {"text": "La unidad total del movimiento obrero y la juventud en torno a Perón.", "isCorrect": false, "rationale": "Existió fuerte enfrentamiento, no unidad."},
+        {"text": "La disputa entre el sindicalismo ortodoxo y la juventud revolucionaria por el rumbo del peronismo.", "isCorrect": true, "rationale": "El conflicto interno marcó la división del movimiento peronista y la violencia política de la época."},
+      {"text": "El predominio de la CGT sobre los movimientos juveniles de izquierda.", "isCorrect": false, "rationale": "Aunque la CGT tenía peso, la disputa fue más compleja y abierta."},
+      {"text": "La lucha entre la oligarquía y los militares.", "isCorrect": false, "rationale": "El conflicto principal fue dentro del peronismo."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 216,
+    "question": "¿Por qué se habla de Terrorismo de Estado para la etapa 1976-1983? ¿Cuáles son sus principales características?",
+    "options": [
+        {"text": "Porque grupos armados tomaron el control del gobierno mediante elecciones.", "isCorrect": false, "rationale": "El régimen fue militar y no surgió de elecciones."},
+        {"text": "Porque la sociedad civil se organizó para atacar al Estado.", "isCorrect": false, "rationale": "Fue el Estado el que ejerció el terrorismo, no la sociedad civil."},
+        {"text": "Porque se impuso una economía cerrada y controlada.", "isCorrect": false, "rationale": "Eso fue una consecuencia económica, no define el terrorismo de Estado."},
+        {"text": "Porque el Estado utilizó la violencia ilegal y sistemática para eliminar opositores políticos.", "isCorrect": true, "rationale": "La dictadura aplicó represión clandestina, desapariciones y censura: rasgos del terrorismo de Estado."},
+    ],
+    "hint": ""
+  },
+  {
+    "id": 217,
+    "question": "Explique la política económica de José Alfredo Martínez de Hoz (1976-1981).",
+    "options": [
+      {"text": "Implementó apertura comercial, liberalización financiera y endeudamiento externo.", "isCorrect": true, "rationale": "Su política neoliberal desindustrializó la economía y aumentó la deuda externa."},
+      {"text": "Buscó la sustitución de importaciones y el fortalecimiento industrial.", "isCorrect": false, "rationale": "Hizo lo contrario: apertura y desindustrialización."},
+      {"text": "Impulsó una economía mixta con participación sindical.", "isCorrect": false, "rationale": "El sindicalismo fue reprimido, no incorporado."},
+      {"text": "Estableció control estatal sobre el comercio exterior.", "isCorrect": false, "rationale": "Se redujo la intervención estatal en favor del libre mercado."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 218,
+    "question": "¿Cómo definiría la relación de Alfonsín con las Fuerzas Armadas? ¿Por qué?",
+    "options": [
+        {"text": "Cercana, basada en la cooperación y la amnistía total.", "isCorrect": false, "rationale": "Alfonsín no promovió amnistía total, sino justicia y control civil."},
+        {"text": "Inexistente, ya que las FFAA fueron disueltas.", "isCorrect": false, "rationale": "Las Fuerzas Armadas continuaron existiendo institucionalmente."},
+        {"text": "Tensa, debido a los juicios por violaciones a los derechos humanos y los levantamientos militares.", "isCorrect": true, "rationale": "Alfonsín impulsó el Juicio a las Juntas, lo que generó conflictos con sectores castrenses."},
+      {"text": "De alianza, porque apoyaron su política económica.", "isCorrect": false, "rationale": "Hubo oposición militar, no alianza."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 219,
+    "question": "Compare la política económica de Martínez de Hoz (1976-1980) con la de Menem, en cuanto al rol del mercado, la industria, el sindicalismo y los sectores beneficiados.",
+    "options": [
+        {"text": "Martínez de Hoz aplicó políticas keynesianas, Menem neoliberales.", "isCorrect": false, "rationale": "Ambos impulsaron políticas de mercado."},
+        {"text": "Menem fortaleció la industria y el mercado interno, a diferencia de Martínez de Hoz.", "isCorrect": false, "rationale": "Ambos favorecieron la apertura y el capital financiero."},
+        {"text": "Ambos aplicaron políticas neoliberales que beneficiaron al sector financiero y redujeron el rol del Estado y de la industria nacional.", "isCorrect": true, "rationale": "Coincidieron en la liberalización, apertura externa y debilitamiento del sector industrial y sindical."},
+      {"text": "Las políticas de ambos fueron de orientación socialista.", "isCorrect": false, "rationale": "El enfoque fue neoliberal, no socialista."}
+    ],
+    "hint": ""
+  },
+  {
+    "id": 220,
+    "question": "¿Cuáles fueron las consecuencias de la implementación del modelo neoliberal en la Argentina?",
+    "options": [
+        {"text": "Pleno empleo, industrialización y crecimiento equitativo.", "isCorrect": false, "rationale": "Los resultados fueron opuestos: desempleo y desigualdad."},
+        {"text": "Autarquía económica y cierre al comercio exterior.", "isCorrect": false, "rationale": "El neoliberalismo promovió apertura, no autarquía."},
+        {"text": "Desindustrialización, aumento del desempleo, endeudamiento y concentración económica.", "isCorrect": true, "rationale": "Son efectos característicos del neoliberalismo en Argentina durante las décadas de 1980-1990."},
+        {"text": "Redistribución progresiva de la riqueza y expansión sindical.", "isCorrect": false, "rationale": "El sindicalismo perdió poder y aumentó la desigualdad."}
+    ],
+    "hint": ""
+  }
+]
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>
