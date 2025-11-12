@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 136,
+        "question": "¿Qué fecha regresó Perón a Argentina tras 17 años de exilio?",
+        "options": [
+            {"text": "25 de mayo de 1973", "isCorrect": false, "rationale": "Fecha de asunción de Cámpora, no del retorno de Perón."},
+            {"text": "17 de noviembre de 1972", "isCorrect": true, "rationale": "Fecha del regreso de Perón tras 17 años de exilio."},
+            {"text": "20 de junio de 1973", "isCorrect": false, "rationale": "Fecha de la Masacre de Ezeiza, su regreso definitivo."},
+            {"text": "23 de septiembre de 1973", "isCorrect": false, "rationale": "Fecha de las elecciones que ganó Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 137,
+        "question": "¿Qué frente político formó Perón?",
+        "options": [
+            {"text": "Frente de Liberación Nacional", "isCorrect": false, "rationale": "Nombre incorrecto del frente."},
+            {"text": "Frente Justicialista de Liberación (FREJULI)", "isCorrect": true, "rationale": "Frente político formado por Perón para las elecciones."},
+            {"text": "Frente Popular Argentino", "isCorrect": false, "rationale": "No corresponde al nombre histórico."},
+            {"text": "Alianza Justicialista", "isCorrect": false, "rationale": "Nombre erróneo del frente peronista."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 138,
+        "question": "¿Qué significan las siglas FREJULI?",
+        "options": [
+            {"text": "Frente Revolucionario de Justicia y Liberación", "isCorrect": false, "rationale": "Interpretación incorrecta de las siglas."},
+            {"text": "Frente de Juntas Liberales", "isCorrect": false, "rationale": "No corresponde al significado real."},
+            {"text": "Frente Justicialista de Liberación", "isCorrect": true, "rationale": "Significado correcto del frente político peronista."},
+            {"text": "Frente de Justicia y Unidad Liberal", "isCorrect": false, "rationale": "Interpretación errónea de las siglas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 139,
+        "question": "¿Quiénes formaron la fórmula ganadora en marzo de 1973?",
+        "options": [
+            {"text": "Juan Perón - Isabel Perón", "isCorrect": false, "rationale": "Esta fórmula ganó en septiembre de 1973, no en marzo."},
+            {"text": "Héctor Cámpora - Vicente Solano Lima", "isCorrect": true, "rationale": "Fórmula del FREJULI que ganó en marzo de 1973."},
+            {"text": "Héctor Cámpora - José López Rega", "isCorrect": false, "rationale": "López Rega no fue vicepresidente de Cámpora."},
+            {"text": "Juan Perón - Vicente Solano Lima", "isCorrect": false, "rationale": "Perón no pudo ser candidato en marzo de 1973."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 140,
+        "question": "¿Qué fecha asumió Héctor Cámpora?",
+        "options": [
+            {"text": "17 de noviembre de 1972", "isCorrect": false, "rationale": "Fecha del retorno de Perón, no de la asunción de Cámpora."},
+            {"text": "20 de junio de 1973", "isCorrect": false, "rationale": "Fecha de la Masacre de Ezeiza."},
+            {"text": "25 de mayo de 1973", "isCorrect": true, "rationale": "Fecha de asunción de Cámpora como presidente."},
+            {"text": "13 de julio de 1973", "isCorrect": false, "rationale": "Fecha de renuncia de Cámpora."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 141,
+        "question": "¿Cómo se autodefinió el gobierno de Cámpora?",
+        "options": [
+            {"text": "El gobierno de la liberación", "isCorrect": false, "rationale": "No fue la autodefinición del gobierno."},
+            {"text": "El gobierno del pueblo", "isCorrect": true, "rationale": "Definición oficial del gobierno de Cámpora."},
+            {"text": "El gobierno revolucionario", "isCorrect": false, "rationale": "No corresponde a la autodefinición histórica."},
+            {"text": "El gobierno de transición", "isCorrect": false, "rationale": "Aunque lo fue de facto, no fue su autodefinición."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 142,
+        "question": "¿Qué medida tomó Cámpora respecto a presos políticos?",
+        "options": [
+            {"text": "Decretó amnistía para presos políticos", "isCorrect": true, "rationale": "Liberó presos políticos, muchos de organizaciones armadas."},
+            {"text": "Los trasladó a cárceles federales", "isCorrect": false, "rationale": "No fue la medida tomada por Cámpora."},
+            {"text": "Mantuvo la política represiva", "isCorrect": false, "rationale": "Contradice las medidas del gobierno de Cámpora."},
+            {"text": "Los sometió a juicios civiles", "isCorrect": false, "rationale": "No corresponde a la medida implementada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 143,
+        "question": "¿Qué fecha se produjo la Masacre de Ezeiza?",
+        "options": [
+            {"text": "17 de noviembre de 1972", "isCorrect": false, "rationale": "Fecha del primer retorno de Perón."},
+            {"text": "25 de mayo de 1973", "isCorrect": false, "rationale": "Fecha de asunción de Cámpora."},
+            {"text": "13 de julio de 1973", "isCorrect": false, "rationale": "Fecha de renuncia de Cámpora."},
+            {"text": "20 de junio de 1973", "isCorrect": true, "rationale": "Fecha de la masacre durante el regreso definitivo de Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 144,
+        "question": "¿Entre qué facciones del peronismo se enfrentaron en Ezeiza?",
+        "options": [
+            {"text": "Derecha sindical vs. izquierda montonera", "isCorrect": true, "rationale": "Enfrentamiento entre sectores conservadores y revolucionarios del peronismo."},
+            {"text": "CGT vs. organizaciones estudiantiles", "isCorrect": false, "rationale": "Simplificación incorrecta del conflicto."},
+            {"text": "Militares vs. civiles peronistas", "isCorrect": false, "rationale": "No describe correctamente el enfrentamiento."},
+            {"text": "Peronismo histórico vs. neoperonismo", "isCorrect": false, "rationale": "No corresponde a las facciones enfrentadas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 145,
+        "question": "¿Por qué renunció Cámpora?",
+        "options": [
+            {"text": "Por problemas de salud", "isCorrect": false, "rationale": "No fue el motivo de su renuncia."},
+            {"text": "Por presión militar", "isCorrect": false, "rationale": "No fue la causa principal."},
+            {"text": "Para permitir la candidatura de Perón", "isCorrect": true, "rationale": "Renunció para que Perón pudiera ser candidato."},
+            {"text": "Por la Masacre de Ezeiza", "isCorrect": false, "rationale": "Aunque relacionado, no fue el motivo directo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 146,
+        "question": "¿Qué fecha renunció Cámpora?",
+        "options": [
+            {"text": "20 de junio de 1973", "isCorrect": false, "rationale": "Fecha de la Masacre de Ezeiza."},
+            {"text": "25 de mayo de 1973", "isCorrect": false, "rationale": "Fecha de su asunción."},
+            {"text": "13 de julio de 1973", "isCorrect": true, "rationale": "Fecha de renuncia de Cámpora."},
+            {"text": "23 de septiembre de 1973", "isCorrect": false, "rationale": "Fecha de las elecciones que ganó Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 147,
+        "question": "¿Quiénes formaron la fórmula Perón-Perón?",
+        "options": [
+            {"text": "Juan Domingo Perón y Eva Perón", "isCorrect": false, "rationale": "Eva había muerto en 1952."},
+            {"text": "Juan Domingo Perón y María Estela Martínez (Isabel)", "isCorrect": true, "rationale": "Fórmula presidencial de septiembre de 1973."},
+            {"text": "Juan Domingo Perón y Vicente Solano Lima", "isCorrect": false, "rationale": "Solano Lima fue vice de Cámpora, no de Perón."},
+            {"text": "Juan Domingo Perón y José López Rega", "isCorrect": false, "rationale": "López Rega fue ministro, no vicepresidente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 148,
+        "question": "¿Qué fecha ganó Perón su tercera presidencia?",
+        "options": [
+            {"text": "25 de mayo de 1973", "isCorrect": false, "rationale": "Fecha de asunción de Cámpora."},
+            {"text": "13 de julio de 1973", "isCorrect": false, "rationale": "Fecha de renuncia de Cámpora."},
+            {"text": "23 de septiembre de 1973", "isCorrect": true, "rationale": "Fecha de las elecciones que ganó con amplio margen."},
+            {"text": "1 de octubre de 1973", "isCorrect": false, "rationale": "No corresponde a ningún evento electoral."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 149,
+        "question": "¿Quién fue asesinado días después de la asunción de Perón?",
+        "options": [
+            {"text": "Augusto Vandor", "isCorrect": false, "rationale": "Fue asesinado en 1970, no en 1973."},
+            {"text": "José Ignacio Rucci", "isCorrect": true, "rationale": "Secretario general de la CGT, asesinado por Montoneros."},
+            {"text": "Arturo Mor Roig", "isCorrect": false, "rationale": "Fue asesinado en 1974, no en 1973."},
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Fue asesinado en 1970."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 150,
+        "question": "¿Qué cargo tenía José Ignacio Rucci?",
+        "options": [
+            {"text": "Ministro de Trabajo", "isCorrect": false, "rationale": "No era ministro."},
+            {"text": "Jefe de la Policía Federal", "isCorrect": false, "rationale": "No ocupaba ese cargo."},
+            {"text": "Secretario general de la CGT", "isCorrect": true, "rationale": "Líder sindical y aliado de Perón."},
+            {"text": "Gobernador de Buenos Aires", "isCorrect": false, "rationale": "No era gobernador."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 151,
+        "question": "¿Qué fecha se produjo la ruptura con la izquierda peronista en Plaza de Mayo?",
+        "options": [
+            {"text": "17 de octubre de 1973", "isCorrect": false, "rationale": "Día del Lealtad Peronista, pero no la ruptura."},
+            {"text": "25 de mayo de 1974", "isCorrect": false, "rationale": "No corresponde a la fecha de ruptura."},
+            {"text": "1º de mayo de 1974", "isCorrect": true, "rationale": "Día que la izquierda peronista se retiró de Plaza de Mayo."},
+            {"text": "1 de julio de 1974", "isCorrect": false, "rationale": "Fecha de muerte de Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 152,
+        "question": "¿Quién era el ministro de Bienestar Social que representaba el ala conservadora?",
+        "options": [
+            {"text": "Celestino Rodrigo", "isCorrect": false, "rationale": "Fue ministro de Economía en 1975."},
+            {"text": "José López Rega", "isCorrect": true, "rationale": "Ministro de Bienestar Social e impulsor de la Triple A."},
+            {"text": "Ítalo Lúder", "isCorrect": false, "rationale": "Fue presidente provisional del Senado."},
+            {"text": "Alberto Villar", "isCorrect": false, "rationale": "Era jefe de Policía."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 153,
+        "question": "¿Qué significan las siglas AAA o Triple A?",
+        "options": [
+            {"text": "Asociación Argentina Anticomunista", "isCorrect": false, "rationale": "Interpretación incorrecta de las siglas."},
+            {"text": "Acción Argentina Armada", "isCorrect": false, "rationale": "No corresponde al significado real."},
+            {"text": "Alianza Anticomunista Argentina", "isCorrect": true, "rationale": "Grupo parapolicial responsable de persecuciones y asesinatos."},
+            {"text": "Agrupación de Acción Argentina", "isCorrect": false, "rationale": "Nombre incorrecto de la organización."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 154,
+        "question": "¿Quién impulsó la creación de la Triple A?",
+        "options": [
+            {"text": "Juan Domingo Perón", "isCorrect": false, "rationale": "Aunque bajo su gobierno, no fue su impulsor directo."},
+            {"text": "José Ignacio Rucci", "isCorrect": false, "rationale": "Era líder sindical, no impulsor de la Triple A."},
+            {"text": "Isabel Perón", "isCorrect": false, "rationale": "Permitió su existencia pero no fue su creadora."},
+            {"text": "José López Rega", "isCorrect": true, "rationale": "Ministro de Bienestar Social e impulsor de la Triple A."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 155,
+        "question": "¿Qué fecha murió Juan Domingo Perón?",
+        "options": [
+            {"text": "1 de mayo de 1974", "isCorrect": false, "rationale": "Fecha de la ruptura con la izquierda peronista."},
+            {"text": "26 de julio de 1974", "isCorrect": false, "rationale": "Fecha de muerte de Eva Perón en 1952."},
+            {"text": "1 de julio de 1974", "isCorrect": true, "rationale": "Fecha de muerte de Juan Domingo Perón."},
+            {"text": "24 de marzo de 1976", "isCorrect": false, "rationale": "Fecha del golpe militar."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 156,
+        "question": "¿Quién asumió tras la muerte de Perón?",
+        "options": [
+            {"text": "José López Rega", "isCorrect": false, "rationale": "Era ministro pero no asumió la presidencia."},
+            {"text": "Ítalo Lúder", "isCorrect": false, "rationale": "Reemplazó temporalmente a Isabel, no a Perón."},
+            {"text": "María Estela Martínez de Perón (Isabel)", "isCorrect": true, "rationale": "Vicepresidenta que asumió tras la muerte de Perón."},
+            {"text": "Raúl Lastiri", "isCorrect": false, "rationale": "Fue presidente interino entre Cámpora y Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 157,
+        "question": "¿Qué particularidad histórica tuvo Isabel Perón?",
+        "options": [
+            {"text": "Fue la presidenta más joven de Argentina", "isCorrect": false, "rationale": "No fue la más joven."},
+            {"text": "Fue la primera mujer presidenta de Argentina", "isCorrect": true, "rationale": "Primera mujer en ocupar la presidencia argentina."},
+            {"text": "Fue la presidenta con más años en el cargo", "isCorrect": false, "rationale": "Gobernó menos de dos años."},
+            {"text": "Fue la única vicepresidenta electa", "isCorrect": false, "rationale": "No fue la única vicepresidenta."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 158,
+        "question": "¿Qué organización pasó a la clandestinidad en septiembre de 1974?",
+        "options": [
+            {"text": "ERP (Ejército Revolucionario del Pueblo)", "isCorrect": false, "rationale": "Ya operaba clandestinamente."},
+            {"text": "La Triple A", "isCorrect": false, "rationale": "Era una organización parapolicial, no guerrillera."},
+            {"text": "Montoneros", "isCorrect": true, "rationale": "Pasaron a la clandestinidad en septiembre de 1974."},
+            {"text": "FAR (Fuerzas Armadas Revolucionarias)", "isCorrect": false, "rationale": "Se habían fusionado con Montoneros antes."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 159,
+        "question": "¿A quién asesinaron Montoneros en septiembre de 1974?",
+        "options": [
+            {"text": "José Ignacio Rucci", "isCorrect": false, "rationale": "Fue asesinado en 1973, no en septiembre de 1974."},
+            {"text": "Augusto Vandor", "isCorrect": false, "rationale": "Fue asesinado en 1970."},
+            {"text": "Arturo Mor Roig", "isCorrect": true, "rationale": "Exministro de Lanusse asesinado por Montoneros."},
+            {"text": "Alberto Villar", "isCorrect": false, "rationale": "Le volaron el yate, pero no fue asesinado en septiembre."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 160,
+        "question": "¿Qué atentados realizaron Montoneros contra el jefe de Policía?",
+        "options": [
+            {"text": "Le secuestraron a su familia", "isCorrect": false, "rationale": "No fue el atentado realizado."},
+            {"text": "Atacaron su residencia oficial", "isCorrect": false, "rationale": "No corresponde al atentado documentado."},
+            {"text": "Volaron su yate", "isCorrect": true, "rationale": "Montoneros volaron el yate de Alberto Villar."},
+            {"text": "Le colocaron una bomba en su auto", "isCorrect": false, "rationale": "No fue el tipo de atentado realizado."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 161,
+        "question": "¿Qué empresarios fueron secuestrados por Montoneros?",
+        "options": [
+            {"text": "Los hermanos Macri", "isCorrect": false, "rationale": "No fueron secuestrados por Montoneros en 1974."},
+            {"text": "Los empresarios Born", "isCorrect": true, "rationale": "Familia de empresarios secuestrada por Montoneros."},
+            {"text": "Los hermanos Bulgheroni", "isCorrect": false, "rationale": "No corresponde a este secuestro."},
+            {"text": "Los empresarios Fortabat", "isCorrect": false, "rationale": "No fueron los secuestrados en 1974."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 162,
+        "question": "¿Qué decreto firmó Isabel en febrero de 1975?",
+        "options": [
+            {"text": "Decreto de Estado de Sitio", "isCorrect": false, "rationale": "No fue el decreto firmado en febrero."},
+            {"text": "Decreto de aniquilamiento de la subversión en Tucumán", "isCorrect": true, "rationale": "Inició el Operativo Independencia."},
+            {"text": "Decreto de amnistía general", "isCorrect": false, "rationale": "Contradice la política represiva del gobierno."},
+            {"text": "Decreto de intervención federal", "isCorrect": false, "rationale": "No fue el decreto específico de febrero."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 163,
+        "question": "¿Qué nombre recibió el operativo militar en Tucumán?",
+        "options": [
+            {"text": "Operativo Cóndor", "isCorrect": false, "rationale": "Fue un plan de coordinación regional posterior."},
+            {"text": "Operativo Independencia", "isCorrect": true, "rationale": "Operativo militar para reprimir guerrillas en Tucumán."},
+            {"text": "Operativo Soberanía", "isCorrect": false, "rationale": "No corresponde al nombre del operativo."},
+            {"text": "Operativo Tucumano", "isCorrect": false, "rationale": "Nombre incorrecto del operativo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 164,
+        "question": "¿Quién fue el ministro de Economía responsable del 'Rodrigazo'?",
+        "options": [
+            {"text": "José López Rega", "isCorrect": false, "rationale": "Era ministro de Bienestar Social, no de Economía."},
+            {"text": "Álvaro Alsogaray", "isCorrect": false, "rationale": "Fue ministro en gobiernos anteriores."},
+            {"text": "Celestino Rodrigo", "isCorrect": true, "rationale": "Ministro de Economía que aplicó el brutal plan de ajuste."},
+            {"text": "José Alfredo Martínez de Hoz", "isCorrect": false, "rationale": "Fue ministro durante la dictadura de 1976-1983."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 165,
+        "question": "¿Qué consecuencias tuvo el plan de Celestino Rodrigo?",
+        "options": [
+            {"text": "Reducción de la inflación y estabilidad", "isCorrect": false, "rationale": "Tuvo el efecto contrario."},
+            {"text": "Devaluación, suba de tarifas e inflación descontrolada", "isCorrect": true, "rationale": "Causó inflación descontrolada y estallido social."},
+            {"text": "Crecimiento económico sostenido", "isCorrect": false, "rationale": "Contradice los efectos reales del plan."},
+            {"text": "Aumento del poder adquisitivo", "isCorrect": false, "rationale": "El plan redujo drásticamente el poder adquisitivo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 166,
+        "question": "¿Quiénes fueron forzados a renunciar tras el Rodrigazo?",
+        "options": [
+            {"text": "Isabel Perón y su gabinete", "isCorrect": false, "rationale": "Isabel no renunció tras el Rodrigazo."},
+            {"text": "Celestino Rodrigo y José López Rega", "isCorrect": true, "rationale": "Las protestas obreras forzaron su renuncia."},
+            {"text": "Ítalo Lúder y el gabinete militar", "isCorrect": false, "rationale": "Lúder aún no había asumido temporalmente."},
+            {"text": "Los jefes militares", "isCorrect": false, "rationale": "No fueron quienes renunciaron."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 167,
+        "question": "¿Quién reemplazó temporalmente a Isabel cuando pidió licencia?",
+        "options": [
+            {"text": "José López Rega", "isCorrect": false, "rationale": "Ya había renunciado tras el Rodrigazo."},
+            {"text": "Celestino Rodrigo", "isCorrect": false, "rationale": "También había renunciado."},
+            {"text": "Raúl Lastiri", "isCorrect": false, "rationale": "Fue presidente interino en 1973, no en 1975."},
+            {"text": "Ítalo Lúder", "isCorrect": true, "rationale": "Presidente provisional del Senado que reemplazó a Isabel."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 168,
+        "question": "¿A dónde extendió Lúder el Operativo Independencia?",
+        "options": [
+            {"text": "Solo a la provincia de Córdoba", "isCorrect": false, "rationale": "La extensión fue más amplia."},
+            {"text": "A las provincias del norte", "isCorrect": false, "rationale": "Fue más extenso que solo el norte."},
+            {"text": "A todo el país", "isCorrect": true, "rationale": "Extendió el operativo represivo a todo el territorio nacional."},
+            {"text": "A Buenos Aires y alrededores", "isCorrect": false, "rationale": "La extensión fue nacional, no regional."}
+        ],
+        "hint": ""
+    }
+]
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

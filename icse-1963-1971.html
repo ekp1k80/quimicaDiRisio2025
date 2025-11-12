@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 102,
+        "question": "¿Cómo fue el crecimiento económico durante el gobierno de Illia?",
+        "options": [
+            {"text": "Estancamiento con alta inflación", "isCorrect": false, "rationale": "No corresponde al período de Illia."},
+            {"text": "Crecimiento del PBI con baja inflación", "isCorrect": true, "rationale": "Política económica moderada con buenos indicadores económicos."},
+            {"text": "Recesión profunda y desempleo masivo", "isCorrect": false, "rationale": "No caracteriza este período."},
+            {"text": "Hiperinflación y crisis financiera", "isCorrect": false, "rationale": "Situación que no se dio en su gobierno."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 103,
+        "question": "¿Qué pacto rechazó Illia al asumir?",
+        "options": [
+            {"text": "El pacto con la Unión Soviética", "isCorrect": false, "rationale": "No hubo tal pacto en ese contexto."},
+            {"text": "El pacto petrolero de Frondizi", "isCorrect": true, "rationale": "Rechazó los contratos petroleros con empresas extranjeras."},
+            {"text": "El pacto con el FMI", "isCorrect": false, "rationale": "No fue el rechazo más significativo de su gobierno."},
+            {"text": "El pacto sindical con la CGT", "isCorrect": false, "rationale": "No corresponde a las acciones iniciales de Illia."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 104,
+        "question": "¿Qué reclamo realizó Argentina ante la ONU en 1965?",
+        "options": [
+            {"text": "Soberanía sobre la Antártida", "isCorrect": false, "rationale": "No fue el reclamo principal en 1965."},
+            {"text": "Derechos humanos en América Latina", "isCorrect": false, "rationale": "No fue el tema abordado por Illia."},
+            {"text": "Soberanía sobre las Islas Malvinas", "isCorrect": true, "rationale": "Reclamo argentino presentado ante Naciones Unidas."},
+            {"text": "Desarme nuclear", "isCorrect": false, "rationale": "No fue la temática principal del reclamo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 105,
+        "question": "¿Qué intentó hacer Perón que desestabilizó al gobierno de Illia?",
+        "options": [
+            {"text": "Retornar a la Argentina", "isCorrect": true, "rationale": "El intento fallido de retorno desestabilizó el gobierno."},
+            {"text": "Fundar un nuevo partido político", "isCorrect": false, "rationale": "No fue la acción desestabilizadora principal."},
+            {"text": "Apoyar un golpe militar", "isCorrect": false, "rationale": "No fue su estrategia en ese momento."},
+            {"text": "Renunciar al liderazgo peronista", "isCorrect": false, "rationale": "Contrario a sus acciones reales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 106,
+        "question": "¿Quién impulsaba la 'desperonización' dentro del sindicalismo?",
+        "options": [
+            {"text": "Saúl Ubaldini", "isCorrect": false, "rationale": "Fue un dirigente posterior, más ortodoxamente peronista."},
+            {"text": "Raimundo Ongaro", "isCorrect": false, "rationale": "Lideró la CGT combativa, no la desperonización."},
+            {"text": "Augusto Vandor", "isCorrect": true, "rationale": "Impulsó la desperonización creando la Unión Popular."},
+            {"text": "Lorenzo Miguel", "isCorrect": false, "rationale": "Fue figura clave pero posterior en el sindicalismo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 107,
+        "question": "¿Qué partido creó Vandor para competir sin Perón?",
+        "options": [
+            {"text": "Unión Popular", "isCorrect": true, "rationale": "Creado para competir electoralmente sin Perón."},
+            {"text": "Partido Justicialista Independiente", "isCorrect": false, "rationale": "Nombre incorrecto del partido vandorista."},
+            {"text": "Movimiento Nacional Laborista", "isCorrect": false, "rationale": "No fue la denominación utilizada."},
+            {"text": "Frente Sindical", "isCorrect": false, "rationale": "No corresponde a la iniciativa de Vandor."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 108,
+        "question": "¿Qué fecha fue derrocado Illia?",
+        "options": [
+            {"text": "4 de junio de 1966", "isCorrect": false, "rationale": "Fecha de asunción de Perón en otros años."},
+            {"text": "28 de junio de 1966", "isCorrect": true, "rationale": "Golpe militar que instauró la Revolución Argentina."},
+            {"text": "16 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha del golpe contra Perón."},
+            {"text": "6 de septiembre de 1930", "isCorrect": false, "rationale": "Fecha del primer golpe del siglo XX."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 109,
+        "question": "¿Quién asumió tras el golpe que derrocó a Illia?",
+        "options": [
+            {"text": "Alejandro Agustín Lanusse", "isCorrect": false, "rationale": "Asumió posteriormente, en 1971."},
+            {"text": "Juan Carlos Onganía", "isCorrect": true, "rationale": "General que inició la dictadura de la Revolución Argentina."},
+            {"text": "Roberto Marcelo Levingston", "isCorrect": false, "rationale": "Asumió en 1970 tras Onganía."},
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Lideró la Revolución Libertadora en los 50."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 110,
+        "question": "¿Cómo se autodenominó la dictadura que comenzó en 1966?",
+        "options": [
+            {"text": "Proceso de Reorganización Nacional", "isCorrect": false, "rationale": "Nombre de la dictadura de 1976-1983."},
+            {"text": "Revolución Libertadora", "isCorrect": false, "rationale": "Dictadura que derrocó a Perón en 1955."},
+            {"text": "Revolución Argentina", "isCorrect": true, "rationale": "Autodenominación de la dictadura de Onganía."},
+            {"text": "Gobierno de Reconstrucción Nacional", "isCorrect": false, "rationale": "No fue la denominación utilizada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 111,
+        "question": "¿Qué instituciones disolvió o intervino Onganía al asumir?",
+        "options": [
+            {"text": "Solo el Congreso Nacional", "isCorrect": false, "rationale": "Disolvió más instituciones además del Congreso."},
+            {"text": "Congreso, Corte Suprema, partidos y sindicatos", "isCorrect": true, "rationale": "Intervención masiva de instituciones democráticas."},
+            {"text": "Únicamente los sindicatos", "isCorrect": false, "rationale": "La intervención fue mucho más amplia."},
+            {"text": "Solo la Corte Suprema", "isCorrect": false, "rationale": "No fue la única institución afectada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 112,
+        "question": "¿Qué tipo de Estado promovió Onganía?",
+        "options": [
+            {"text": "Estado democrático y participativo", "isCorrect": false, "rationale": "Contrario al modelo autoritario de Onganía."},
+            {"text": "Estado tecnocrático con poder concentrado", "isCorrect": true, "rationale": "Poder concentrado en el Ejecutivo con apoyo empresarial."},
+            {"text": "Estado socialista", "isCorrect": false, "rationale": "Opuesto a la ideología de Onganía."},
+            {"text": "Estado federal descentralizado", "isCorrect": false, "rationale": "No caracteriza su modelo de gobierno."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 113,
+        "question": "¿Quién fue el ministro de Economía de Onganía?",
+        "options": [
+            {"text": "José Alfredo Martínez de Hoz", "isCorrect": false, "rationale": "Fue ministro durante el Proceso iniciado en 1976."},
+            {"text": "Adalbert Krieger Vasena", "isCorrect": true, "rationale": "Ministro que implementó modelo económico liberal."},
+            {"text": "Álvaro Alsogaray", "isCorrect": false, "rationale": "Ministro de Frondizi y Guido, no de Onganía."},
+            {"text": "Celestino Rodrigo", "isCorrect": false, "rationale": "Ministro de Isabel Perón, responsable del Rodrigazo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 114,
+        "question": "¿Qué medidas económicas implementó Krieger Vasena?",
+        "options": [
+            {"text": "Aumento de salarios y protección industrial", "isCorrect": false, "rationale": "Opuesto a las políticas liberales aplicadas."},
+            {"text": "Congelamiento de salarios, devaluación y aumento de tarifas", "isCorrect": true, "rationale": "Medidas que aumentaron el costo de vida y conflicto social."},
+            {"text": "Nacionalización de empresas extranjeras", "isCorrect": false, "rationale": "Contrario al modelo aperturista implementado."},
+            {"text": "Redistribución de ingresos hacia sectores populares", "isCorrect": false, "rationale": "No fue parte de su política económica."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 115,
+        "question": "¿En qué porcentaje devaluó la moneda Krieger Vasena?",
+        "options": [
+            {"text": "20%", "isCorrect": false, "rationale": "Porcentaje menor a la devaluación real."},
+            {"text": "30%", "isCorrect": false, "rationale": "Cifra inferior a la devaluación aplicada."},
+            {"text": "40%", "isCorrect": true, "rationale": "Devaluación del 40% como parte del plan económico liberal."},
+            {"text": "50%", "isCorrect": false, "rationale": "Porcentaje mayor al aplicado."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 116,
+        "question": "¿En cuántas CGT se dividió el movimiento obrero en 1968?",
+        "options": [
+            {"text": "Tres CGT diferentes", "isCorrect": false, "rationale": "Fueron solo dos divisiones principales."},
+            {"text": "Dos CGT", "isCorrect": true, "rationale": "CGT Azopardo (dialoguista) y CGT de los Argentinos (combativa)."},
+            {"text": "Cuatro CGT regionales", "isCorrect": false, "rationale": "No hubo tantas divisiones."},
+            {"text": "No se dividió en 1968", "isCorrect": false, "rationale": "Sí hubo división del movimiento obrero."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 117,
+        "question": "¿Quién lideraba la CGT Azopardo?",
+        "options": [
+            {"text": "Raimundo Ongaro", "isCorrect": false, "rationale": "Encabezaba la CGT de los Argentinos."},
+            {"text": "Augusto Vandor", "isCorrect": true, "rationale": "Lideró la CGT más dialoguista y moderada."},
+            {"text": "Saúl Ubaldini", "isCorrect": false, "rationale": "Fue figura sindical en períodos posteriores."},
+            {"text": "Lorenzo Miguel", "isCorrect": false, "rationale": "Dirigente destacado pero en otro momento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 118,
+        "question": "¿Quién encabezaba la CGT de los Argentinos?",
+        "options": [
+            {"text": "Augusto Vandor", "isCorrect": false, "rationale": "Lideraba la CGT Azopardo, no esta."},
+            {"text": "Lorenzo Miguel", "isCorrect": false, "rationale": "No era el líder de esta CGT."},
+            {"text": "Raimundo Ongaro", "isCorrect": true, "rationale": "Encabezó la CGT más combativa y contestataria."},
+            {"text": "José Ignacio Rucci", "isCorrect": false, "rationale": "Fue secretario general de la CGT posteriormente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 119,
+        "question": "¿Qué estudiante fue asesinado en Corrientes en 1969?",
+        "options": [
+            {"text": "Santiago Pampillón", "isCorrect": false, "rationale": "Estudiante asesinado en Córdoba, no Corrientes."},
+            {"text": "Juan José Cabral", "isCorrect": true, "rationale": "Asesinado por la policía en protesta estudiantil en Corrientes."},
+            {"text": "Adolfo Bello", "isCorrect": false, "rationale": "No corresponde al caso de Corrientes 1969."},
+            {"text": "Luis Blanco", "isCorrect": false, "rationale": "Nombre incorrecto del estudiante."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 120,
+        "question": "¿Qué nombre recibe la protesta de mayo de 1969 en Rosario?",
+        "options": [
+            {"text": "El Cordobazo", "isCorrect": false, "rationale": "Ocurrió en Córdoba, no en Rosario."},
+            {"text": "El Rosariazo", "isCorrect": true, "rationale": "Manifestaciones estudiantiles en Rosario con muertos."},
+            {"text": "El Viborazo", "isCorrect": false, "rationale": "Corresponde al segundo Cordobazo de 1971."},
+            {"text": "La Noche de los Bastones Largos", "isCorrect": false, "rationale": "Represión en universidades de Buenos Aires en 1966."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 121,
+        "question": "¿Qué fechas se produjo el Cordobazo?",
+        "options": [
+            {"text": "29 y 30 de mayo de 1969", "isCorrect": true, "rationale": "Insurrección obrera y estudiantil reprimida violentamente."},
+            {"text": "17 de octubre de 1945", "isCorrect": false, "rationale": "Fecha del nacimiento del peronismo."},
+            {"text": "16 de junio de 1955", "isCorrect": false, "rationale": "Bombardeo a Plaza de Mayo."},
+            {"text": "9 de junio de 1956", "isCorrect": false, "rationale": "Levantamiento del general Valle."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 122,
+        "question": "¿Qué empresa se intentó privatizar en Córdoba provocando el Cordobazo?",
+        "options": [
+            {"text": "YPF (Yacimientos Petrolíferos Fiscales)", "isCorrect": false, "rationale": "No fue la empresa relacionada con el Cordobazo."},
+            {"text": "EPEC (energía eléctrica provincial)", "isCorrect": true, "rationale": "Intento de privatización que generó paro sindical."},
+            {"text": "Ferrocarriles Argentinos", "isCorrect": false, "rationale": "No fue el conflicto central del Cordobazo."},
+            {"text": "Aerolíneas Argentinas", "isCorrect": false, "rationale": "No estuvo relacionada con este evento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 123,
+        "question": "¿Qué sectores participaron en el Cordobazo?",
+        "options": [
+            {"text": "Solo estudiantes universitarios", "isCorrect": false, "rationale": "Participaron más sectores además de estudiantes."},
+            {"text": "Únicamente sindicatos obreros", "isCorrect": false, "rationale": "No fue exclusivamente obrero."},
+            {"text": "Obreros y estudiantes", "isCorrect": true, "rationale": "Insurrección conjunta de sectores obrero y estudiantil."},
+            {"text": "Empresarios y militares", "isCorrect": false, "rationale": "Estos sectores no fueron los protagonistas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 124,
+        "question": "¿En qué mes fue derrocado Onganía?",
+        "options": [
+            {"text": "Marzo de 1970", "isCorrect": false, "rationale": "Mes incorrecto del derrocamiento."},
+            {"text": "Junio de 1970", "isCorrect": true, "rationale": "Derrocado por sus propios militares."},
+            {"text": "Septiembre de 1970", "isCorrect": false, "rationale": "No corresponde al mes del golpe interno."},
+            {"text": "Diciembre de 1970", "isCorrect": false, "rationale": "Mes posterior al derrocamiento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 125,
+        "question": "¿Quién asumió como presidente tras Onganía?",
+        "options": [
+            {"text": "Alejandro Agustín Lanusse", "isCorrect": false, "rationale": "Asumió después de Levingston en 1971."},
+            {"text": "Roberto Marcelo Levingston", "isCorrect": true, "rationale": "Presidente de facto tras el derrocamiento de Onganía."},
+            {"text": "Reynaldo Bignone", "isCorrect": false, "rationale": "Presidente de la transición en 1982-1983."},
+            {"text": "Leopoldo Galtieri", "isCorrect": false, "rationale": "Presidente durante la Guerra de Malvinas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 126,
+        "question": "¿Qué organización guerrillera secuestró y asesinó a Aramburu?",
+        "options": [
+            {"text": "ERP (Ejército Revolucionario del Pueblo)", "isCorrect": false, "rationale": "Organización marxista fundada en 1970, no responsable."},
+            {"text": "FAR (Fuerzas Armadas Revolucionarias)", "isCorrect": false, "rationale": "No fue esta organización la responsable."},
+            {"text": "Montoneros", "isCorrect": true, "rationale": "Organización que secuestró y asesinó a Aramburu."},
+            {"text": "FAP (Fuerzas Armadas Peronistas)", "isCorrect": false, "rationale": "No fue la organización responsable del asesinato."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 127,
+        "question": "¿Qué fecha fue asesinado Pedro Eugenio Aramburu?",
+        "options": [
+            {"text": "29 de mayo de 1970", "isCorrect": true, "rationale": "Secuestrado y asesinado por Montoneros."},
+            {"text": "9 de junio de 1956", "isCorrect": false, "rationale": "Fecha del levantamiento del general Valle."},
+            {"text": "16 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha de la Revolución Libertadora."},
+            {"text": "17 de octubre de 1945", "isCorrect": false, "rationale": "Nacimiento del peronismo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 128,
+        "question": "¿Qué significan las siglas ERP?",
+        "options": [
+            {"text": "Ejército Revolucionario Popular", "isCorrect": false, "rationale": "Nombre incorrecto de la organización."},
+            {"text": "Ejército Revolucionario del Pueblo", "isCorrect": true, "rationale": "Organización guerrillera de orientación marxista."},
+            {"text": "Ejército de Resistencia Peronista", "isCorrect": false, "rationale": "No corresponde a esta organización."},
+            {"text": "Ejército Republicano del Pueblo", "isCorrect": false, "rationale": "Denominación incorrecta."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 129,
+        "question": "¿Qué orientación ideológica tenía el ERP?",
+        "options": [
+            {"text": "Peronista revolucionaria", "isCorrect": false, "rationale": "El ERP no era peronista sino marxista."},
+            {"text": "Marxista", "isCorrect": true, "rationale": "Organización guerrillera de orientación marxista."},
+            {"text": "Nacionalista católica", "isCorrect": false, "rationale": "Ideología opuesta a la del ERP."},
+            {"text": "Liberal democrática", "isCorrect": false, "rationale": "No corresponde a su orientación."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 130,
+        "question": "¿Qué sindicalista fue asesinado en 1970?",
+        "options": [
+            {"text": "José Ignacio Rucci", "isCorrect": false, "rationale": "Fue asesinado en 1973 por Montoneros."},
+            {"text": "Saúl Ubaldini", "isCorrect": false, "rationale": "Dirigente posterior, no fue asesinado en 1970."},
+            {"text": "Augusto Vandor", "isCorrect": true, "rationale": "Asesinado de cinco disparos, presuntamente por Montoneros."},
+            {"text": "Lorenzo Miguel", "isCorrect": false, "rationale": "No fue asesinado en ese año."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 131,
+        "question": "¿Cuántos disparos recibió Augusto Vandor?",
+        "options": [
+            {"text": "Tres disparos", "isCorrect": false, "rationale": "Número menor al real."},
+            {"text": "Cinco disparos", "isCorrect": true, "rationale": "Vandor fue asesinado de cinco disparos."},
+            {"text": "Siete disparos", "isCorrect": false, "rationale": "Número mayor al documentado."},
+            {"text": "Dos disparos", "isCorrect": false, "rationale": "Cantidad incorrecta."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 132,
+        "question": "¿Cómo se conoce el segundo Cordobazo de marzo de 1971?",
+        "options": [
+            {"text": "El Rosariazo", "isCorrect": false, "rationale": "Protesta ocurrida en Rosario en 1969."},
+            {"text": "El Viborazo", "isCorrect": true, "rationale": "Nombre del segundo Cordobazo de marzo de 1971."},
+            {"text": "El Mendozazo", "isCorrect": false, "rationale": "Protesta en otra provincia."},
+            {"text": "El Tucumanazo", "isCorrect": false, "rationale": "No es el nombre correcto."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 133,
+        "question": "¿Quién reemplazó a Levingston?",
+        "options": [
+            {"text": "Juan Carlos Onganía", "isCorrect": false, "rationale": "Fue presidente antes de Levingston."},
+            {"text": "Reynaldo Bignone", "isCorrect": false, "rationale": "Presidente de transición en 1982-1983."},
+            {"text": "Alejandro Agustín Lanusse", "isCorrect": true, "rationale": "Reemplazó a Levingston tras el Viborazo."},
+            {"text": "Leopoldo Galtieri", "isCorrect": false, "rationale": "Presidente durante la Guerra de Malvinas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 134,
+        "question": "¿Qué tipo de salida intentó Lanusse?",
+        "options": [
+            {"text": "Perpetuación de la dictadura militar", "isCorrect": false, "rationale": "No fue su estrategia principal."},
+            {"text": "Salida política controlada permitiendo elecciones", "isCorrect": true, "rationale": "Intentó transición controlada impidiendo candidatura de Perón."},
+            {"text": "Entrega inmediata del poder a Perón", "isCorrect": false, "rationale": "Opuesto a lo que intentó hacer."},
+            {"text": "Golpe interno dentro de las Fuerzas Armadas", "isCorrect": false, "rationale": "No fue su plan."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 135,
+        "question": "¿Qué requisito impuso Lanusse para impedir la candidatura de Perón?",
+        "options": [
+            {"text": "Edad máxima de 70 años", "isCorrect": false, "rationale": "No fue este el requisito impuesto."},
+            {"text": "Residencia continua en el país", "isCorrect": true, "rationale": "Exigencia de residencia para ser candidato."},
+            {"text": "Renuncia a la dirigencia del partido", "isCorrect": false, "rationale": "No fue esta la condición establecida."},
+            {"text": "Apoyo de dos tercios del Congreso", "isCorrect": false, "rationale": "Requisito inexistente en ese contexto."}
+        ],
+        "hint": ""
+    }
+]
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

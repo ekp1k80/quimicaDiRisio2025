@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 169,
+        "question": "¿Qué fecha fue el golpe militar que derrocó a Isabel Perón?",
+        "options": [
+            {"text": "28 de junio de 1966", "isCorrect": false, "rationale": "Fecha del golpe de Onganía que inició la Revolución Argentina."},
+            {"text": "24 de marzo de 1976", "isCorrect": true, "rationale": "Fecha exacta del golpe que inició el Proceso de Reorganización Nacional."},
+            {"text": "16 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha del inicio de la Revolución Libertadora contra Perón."},
+            {"text": "2 de abril de 1982", "isCorrect": false, "rationale": "Fecha del inicio de la Guerra de Malvinas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 170,
+        "question": "¿Cómo se autodenominó la dictadura iniciada en 1976?",
+        "options": [
+            {"text": "Revolución Libertadora", "isCorrect": false, "rationale": "Nombre del golpe de 1955 contra Perón."},
+            {"text": "Revolución Argentina", "isCorrect": false, "rationale": "Nombre de la dictadura de Onganía (1966-1973)."},
+            {"text": "Proceso de Reorganización Nacional", "isCorrect": true, "rationale": "Denominación oficial de la dictadura 1976-1983."},
+            {"text": "Gobierno de Reconstrucción Nacional", "isCorrect": false, "rationale": "No corresponde a ninguna dictadura argentina."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 171,
+        "question": "¿Quiénes formaron la Junta Militar de 1976?",
+        "options": [
+            {"text": "Videla, Massera y Agosti", "isCorrect": true, "rationale": "Representantes del Ejército, Armada y Fuerza Aérea respectivamente."},
+            {"text": "Onganía, Levingston y Lanusse", "isCorrect": false, "rationale": "Presidentes de facto de la Revolución Argentina (1966-1973)."},
+            {"text": "Galtieri, Anaya y Lami Dozo", "isCorrect": false, "rationale": "Junta que gobernó durante la Guerra de Malvinas."},
+            {"text": "Videla, Viola y Galtieri", "isCorrect": false, "rationale": "Presidentes sucesivos del Proceso, no la Junta inicial."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 172,
+        "question": "¿Qué rama militar representaba Jorge Rafael Videla?",
+        "options": [
+            {"text": "Armada", "isCorrect": false, "rationale": "Esta rama era representada por Massera."},
+            {"text": "Fuerza Aérea", "isCorrect": false, "rationale": "Esta rama era representada por Agosti."},
+            {"text": "Ejército", "isCorrect": true, "rationale": "Videla era el representante del Ejército en la Junta."},
+            {"text": "Gendarmería Nacional", "isCorrect": false, "rationale": "No formaba parte de la Junta Militar."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 173,
+        "question": "¿Qué rama militar representaba Emilio Eduardo Massera?",
+        "options": [
+            {"text": "Ejército", "isCorrect": false, "rationale": "Esta rama era representada por Videla."},
+            {"text": "Armada", "isCorrect": true, "rationale": "Massera era el representante de la Armada en la Junta."},
+            {"text": "Fuerza Aérea", "isCorrect": false, "rationale": "Esta rama era representada por Agosti."},
+            {"text": "Prefectura Naval", "isCorrect": false, "rationale": "No formaba parte de la Junta Militar."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 174,
+        "question": "¿Qué rama militar representaba Orlando Ramón Agosti?",
+        "options": [
+            {"text": "Ejército", "isCorrect": false, "rationale": "Esta rama era representada por Videla."},
+            {"text": "Armada", "isCorrect": false, "rationale": "Esta rama era representada por Massera."},
+            {"text": "Policía Federal", "isCorrect": false, "rationale": "No formaba parte de la Junta Militar."},
+            {"text": "Fuerza Aérea", "isCorrect": true, "rationale": "Agosti era el representante de la Fuerza Aérea en la Junta."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 175,
+        "question": "¿Cuántos desaparecidos se estima que hubo durante la dictadura?",
+        "options": [
+            {"text": "Aproximadamente 5.000", "isCorrect": false, "rationale": "Cifra muy inferior a las estimaciones."},
+            {"text": "Aproximadamente 30.000", "isCorrect": true, "rationale": "Estimación histórica de los desaparecidos durante el Proceso."},
+            {"text": "Aproximadamente 50.000", "isCorrect": false, "rationale": "Cifra superior a las estimaciones documentadas."},
+            {"text": "Aproximadamente 15.000", "isCorrect": false, "rationale": "Cifra inferior a la estimación histórica de 30.000."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 176,
+        "question": "¿Cuántos casos documentados reconocen los informes oficiales?",
+        "options": [
+            {"text": "Entre 3.000 y 5.000", "isCorrect": false, "rationale": "Cifra inferior a los casos documentados."},
+            {"text": "Exactamente 30.000", "isCorrect": false, "rationale": "Esta es la estimación total, no los casos documentados."},
+            {"text": "Al menos 9.000-12.000", "isCorrect": true, "rationale": "Cifra de casos oficialmente documentados según informes."},
+            {"text": "Entre 15.000 y 20.000", "isCorrect": false, "rationale": "Cifra superior a los casos documentados oficialmente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 177,
+        "question": "¿Qué organizaciones guerrilleras fueron las principales perseguidas?",
+        "options": [
+            {"text": "FAR y FAP", "isCorrect": false, "rationale": "Organizaciones que ya se habían fusionado con Montoneros."},
+            {"text": "Montoneros y ERP", "isCorrect": true, "rationale": "Principales organizaciones guerrilleras perseguidas por el Proceso."},
+            {"text": "Uturuncos y FAL", "isCorrect": false, "rationale": "Organizaciones de décadas anteriores."},
+            {"text": "Solo grupos sindicales", "isCorrect": false, "rationale": "Aunque perseguidos, no eran las organizaciones guerrilleras principales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 178,
+        "question": "¿Qué centros clandestinos de detención funcionaron durante la dictadura?",
+        "options": [
+            {"text": "ESMA, Campo de Mayo, El Olimpo, La Perla", "isCorrect": true, "rationale": "Principales centros clandestinos mencionados en el documento."},
+            {"text": "Isla Martín García y Casa Rosada", "isCorrect": false, "rationale": "Lugares históricos pero no centros clandestinos del Proceso."},
+            {"text": "Cárcel de Devoto y Caseros", "isCorrect": false, "rationale": "Cárceles legales, no centros clandestinos."},
+            {"text": "Solo en Buenos Aires", "isCorrect": false, "rationale": "Hubo centros en todo el país, no solo en Buenos Aires."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 179,
+        "question": "¿Qué actividades fueron prohibidas durante el Proceso?",
+        "options": [
+            {"text": "Solo las huelgas obreras", "isCorrect": false, "rationale": "La prohibición fue mucho más amplia."},
+            {"text": "Partidos políticos, sindicatos y actividades culturales subversivas", "isCorrect": true, "rationale": "Se instauró censura total sobre múltiples actividades."},
+            {"text": "Solo los medios de comunicación", "isCorrect": false, "rationale": "La censura abarcó muchas más actividades."},
+            {"text": "Únicamente las organizaciones guerrilleras", "isCorrect": false, "rationale": "La represión alcanzó a toda actividad considerada subversiva."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 180,
+        "question": "¿Quién fue el ministro de Economía entre 1976 y 1981?",
+        "options": [
+            {"text": "Álvaro Alsogaray", "isCorrect": false, "rationale": "Fue ministro en gobiernos anteriores (Frondizi, Guido)."},
+            {"text": "Celestino Rodrigo", "isCorrect": false, "rationale": "Fue ministro durante el gobierno de Isabel Perón."},
+            {"text": "José Alfredo Martínez de Hoz", "isCorrect": true, "rationale": "Ministro de Economía durante todo el gobierno de Videla."},
+            {"text": "Adalbert Krieger Vasena", "isCorrect": false, "rationale": "Fue ministro durante la Revolución Argentina de Onganía."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 181,
+        "question": "¿Qué modelo económico implementó Martínez de Hoz?",
+        "options": [
+            {"text": "Modelo de sustitución de importaciones", "isCorrect": false, "rationale": "Este era el modelo anterior que Martínez de Hoz desmanteló."},
+            {"text": "Modelo liberal y financiero", "isCorrect": true, "rationale": "Apertura, liberalización y endeudamiento externo."},
+            {"text": "Modelo de economía cerrada", "isCorrect": false, "rationale": "Contrario al modelo de apertura que implementó."},
+            {"text": "Modelo keynesiano", "isCorrect": false, "rationale": "Opuesto a la orientación liberal de Martínez de Hoz."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 182,
+        "question": "¿Qué medidas incluyó el plan de Martínez de Hoz?",
+        "options": [
+            {"text": "Aumento de salarios y protección industrial", "isCorrect": false, "rationale": "Contrario a las medidas implementadas."},
+            {"text": "Apertura de importaciones, congelamiento salarial y liberalización", "isCorrect": true, "rationale": "Principales características del plan económico liberal."},
+            {"text": "Nacionalización de empresas extranjeras", "isCorrect": false, "rationale": "Opuesto a la política de apertura implementada."},
+            {"text": "Control estatal de precios y salarios", "isCorrect": false, "rationale": "Se liberalizaron los precios, no se controlaron."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 183,
+        "question": "¿Qué consecuencias tuvo la política económica del Proceso?",
+        "options": [
+            {"text": "Crecimiento industrial y pleno empleo", "isCorrect": false, "rationale": "Resultado opuesto al real."},
+            {"text": "Reducción de la deuda externa", "isCorrect": false, "rationale": "La deuda externa aumentó masivamente."},
+            {"text": "Alta inflación, caída industrial, desempleo y endeudamiento", "isCorrect": true, "rationale": "Consecuencias documentadas del plan de Martínez de Hoz."},
+            {"text": "Estabilidad económica y crecimiento sostenido", "isCorrect": false, "rationale": "Contrario a los resultados reales del plan."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 184,
+        "question": "¿Qué organización sindical fue intervenida?",
+        "options": [
+            {"text": "La Federación Agraria", "isCorrect": false, "rationale": "Fue intervenida pero no era la organización sindical principal."},
+            {"text": "La UIA (Unión Industrial Argentina)", "isCorrect": false, "rationale": "Es una organización empresaria, no sindical."},
+            {"text": "La CGT (Confederación General del Trabajo)", "isCorrect": true, "rationale": "Principal organización sindical que fue intervenida."},
+            {"text": "La CGE (Confederación General Económica)", "isCorrect": false, "rationale": "Era una confederación empresaria, no sindical."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 185,
+        "question": "¿Qué confederación empresaria fue disuelta?",
+        "options": [
+            {"text": "La CGT", "isCorrect": false, "rationale": "Era la confederación sindical, no empresaria."},
+            {"text": "La UIA", "isCorrect": false, "rationale": "No fue disuelta durante el Proceso."},
+            {"text": "La CGE (Confederación General Económica)", "isCorrect": true, "rationale": "Confederación empresaria que fue disuelta por el régimen."},
+            {"text": "La Sociedad Rural Argentina", "isCorrect": false, "rationale": "No fue disuelta durante la dictadura."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 186,
+        "question": "¿Qué intentó aprobar Martínez de Hoz para debilitar los sindicatos?",
+        "options": [
+            {"text": "Una ley de privatización de empresas estatales", "isCorrect": false, "rationale": "No era específica para debilitar sindicatos."},
+            {"text": "Una nueva ley sindical", "isCorrect": true, "rationale": "Intentó debilitar la estructura gremial peronista con fracaso parcial."},
+            {"text": "La prohibición total de huelgas", "isCorrect": false, "rationale": "Ya estaban prohibidas, no necesitaba una ley nueva."},
+            {"text": "Una reforma constitucional", "isCorrect": false, "rationale": "No fue el objetivo de Martínez de Hoz."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 187,
+        "question": "¿Qué ley se aprobó en 1979 respecto a sindicatos?",
+        "options": [
+            {"text": "Ley de disolución total de sindicatos", "isCorrect": false, "rationale": "No se disolvieron totalmente los sindicatos."},
+            {"text": "Ley de democratización sindical", "isCorrect": false, "rationale": "No era el objetivo del régimen militar."},
+            {"text": "Ley de Asociaciones Profesionales con restricciones", "isCorrect": true, "rationale": "Se aprobó con restricciones pero sin eliminar el modelo sindical."},
+            {"text": "Ley de libre asociación obrera", "isCorrect": false, "rationale": "Contrario a las políticas restrictivas del régimen."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 188,
+        "question": "¿Qué partidos formaron la Multipartidaria en 1981?",
+        "options": [
+            {"text": "Solo UCR y PJ", "isCorrect": false, "rationale": "Incluía más partidos además de estos dos."},
+            {"text": "UCR, PJ, MID, PI y Democracia Cristiana", "isCorrect": true, "rationale": "Coalición de partidos que reclamaba el retorno democrático."},
+            {"text": "Todos los partidos de izquierda", "isCorrect": false, "rationale": "Incluía partidos de centro y centroizquierda principalmente."},
+            {"text": "Solo partidos conservadores", "isCorrect": false, "rationale": "Era una coalición amplia, no solo conservadora."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 189,
+        "question": "¿Qué reclamaba la Multipartidaria?",
+        "options": [
+            {"text": "Mayor apertura económica", "isCorrect": false, "rationale": "No era su objetivo principal."},
+            {"text": "El retorno de la democracia y elecciones libres", "isCorrect": true, "rationale": "Principal reclamo de la coalición multipartidaria."},
+            {"text": "La continuidad del régimen militar", "isCorrect": false, "rationale": "Exactamente lo opuesto a su posición."},
+            {"text": "La intervención de los sindicatos", "isCorrect": false, "rationale": "No era parte de sus demandas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 190,
+        "question": "¿Quiénes fueron figuras clave en la reactivación sindical de 1981?",
+        "options": [
+            {"text": "Perón y Eva Perón", "isCorrect": false, "rationale": "Ambos habían fallecido décadas antes."},
+            {"text": "Videla y Massera", "isCorrect": false, "rationale": "Eran los represores, no líderes sindicales."},
+            {"text": "Lorenzo Miguel y Saúl Ubaldini", "isCorrect": true, "rationale": "Principales figuras sindicales durante la reactivación gremial."},
+            {"text": "Augusto Vandor y José Rucci", "isCorrect": false, "rationale": "Ambos habían sido asesinados en la década anterior."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 191,
+        "question": "¿En cuántas CGT se dividieron los sindicatos en 1981?",
+        "options": [
+            {"text": "Tres: Azopardo, Brasil y de los Argentinos", "isCorrect": false, "rationale": "Solo hubo dos divisiones principales en 1981."},
+            {"text": "Dos: CGT Azopardo y CGT Brasil", "isCorrect": true, "rationale": "Azopardo más moderada y Brasil más combativa."},
+            {"text": "No hubo división en 1981", "isCorrect": false, "rationale": "Sí hubo división entre dos sectores."},
+            {"text": "Cuatro sectores diferentes", "isCorrect": false, "rationale": "Solo se dividió en dos CGT principales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 192,
+        "question": "¿Qué procesiones organizó Saúl Ubaldini?",
+        "options": [
+            {"text": "Procesiones al Obelisco", "isCorrect": false, "rationale": "No era el destino de las procesiones organizadas."},
+            {"text": "Procesiones a la Basílica de Luján", "isCorrect": false, "rationale": "No corresponde a las procesiones de Ubaldini."},
+            {"text": "Procesiones a San Cayetano", "isCorrect": true, "rationale": "Organizadas con el lema 'Paz, Pan y Trabajo'."},
+            {"text": "Procesiones a la Plaza de Mayo", "isCorrect": false, "rationale": "Aunque hubo manifestaciones allí, las procesiones eran a San Cayetano."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 193,
+        "question": "¿Cuál era el lema de las procesiones a San Cayetano?",
+        "options": [
+            {"text": "Libertad, Igualdad, Fraternidad", "isCorrect": false, "rationale": "Lema de la Revolución Francesa, no de las procesiones."},
+            {"text": "Paz, Pan y Trabajo", "isCorrect": true, "rationale": "Lema que sintetizaba los reclamos sociales de la época."},
+            {"text": "Ni vencedores ni vencidos", "isCorrect": false, "rationale": "Lema de Lonardi en 1955, no de Ubaldini."},
+            {"text": "Dios, Patria y Hogar", "isCorrect": false, "rationale": "No corresponde al lema de las procesiones obreras."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 194,
+        "question": "¿Qué fecha se produjo la primera gran protesta en Plaza de Mayo contra la dictadura?",
+        "options": [
+            {"text": "2 de abril de 1982", "isCorrect": false, "rationale": "Fecha del inicio de la Guerra de Malvinas, no de la protesta."},
+            {"text": "Marzo de 1982", "isCorrect": true, "rationale": "Manifestación conjunta de ambas CGT, reprimida por la policía."},
+            {"text": "Diciembre de 1983", "isCorrect": false, "rationale": "Ya había terminado la dictadura en esa fecha."},
+            {"text": "Junio de 1981", "isCorrect": false, "rationale": "No corresponde a la primera gran protesta en Plaza de Mayo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 195,
+        "question": "¿Qué fecha comenzó la Guerra de Malvinas?",
+        "options": [
+            {"text": "14 de junio de 1982", "isCorrect": false, "rationale": "Fecha de la rendición argentina, no del inicio."},
+            {"text": "24 de marzo de 1982", "isCorrect": false, "rationale": "Aniversario del golpe de 1976, no del inicio de Malvinas."},
+            {"text": "2 de abril de 1982", "isCorrect": true, "rationale": "Fecha del Operativo Rosario que inició la guerra."},
+            {"text": "16 de junio de 1982", "isCorrect": false, "rationale": "Fecha de la renuncia de Galtieri, no del inicio de la guerra."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 196,
+        "question": "¿Cómo se llamó el operativo militar de invasión a Malvinas?",
+        "options": [
+            {"text": "Operativo Independencia", "isCorrect": false, "rationale": "Operativo represivo en Tucumán durante el gobierno de Isabel."},
+            {"text": "Operativo Cóndor", "isCorrect": false, "rationale": "Plan de coordinación represiva entre dictaduras latinoamericanas."},
+            {"text": "Operativo Rosario", "isCorrect": true, "rationale": "Nombre del operativo de invasión a las Islas Malvinas."},
+            {"text": "Operativo Soberanía", "isCorrect": false, "rationale": "No corresponde al nombre del operativo de 1982."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 197,
+        "question": "¿Qué fecha se produjo la rendición argentina?",
+        "options": [
+            {"text": "2 de abril de 1982", "isCorrect": false, "rationale": "Fecha del inicio de la guerra, no de la rendición."},
+            {"text": "14 de junio de 1982", "isCorrect": true, "rationale": "Fecha de la derrota y rendición ante las fuerzas británicas."},
+            {"text": "16 de junio de 1982", "isCorrect": false, "rationale": "Fecha de la renuncia de Galtieri, no de la rendición."},
+            {"text": "1 de mayo de 1982", "isCorrect": false, "rationale": "Fecha intermedia durante el conflicto."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 198,
+        "question": "¿Quién era presidente de facto durante la Guerra de Malvinas?",
+        "options": [
+            {"text": "Jorge Rafael Videla", "isCorrect": false, "rationale": "Había dejado la presidencia antes de la guerra."},
+            {"text": "Roberto Eduardo Viola", "isCorrect": false, "rationale": "Gobernó brevemente antes de Galtieri."},
+            {"text": "Leopoldo Galtieri", "isCorrect": true, "rationale": "Presidente de facto que ordenó la invasión a Malvinas."},
+            {"text": "Reynaldo Bignone", "isCorrect": false, "rationale": "Asumió después de la derrota de Malvinas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 199,
+        "question": "¿Desde cuándo gobernaba Galtieri?",
+        "options": [
+            {"text": "Marzo de 1976", "isCorrect": false, "rationale": "Fecha del inicio del Proceso con Videla."},
+            {"text": "Diciembre de 1981", "isCorrect": true, "rationale": "Asumió la presidencia de facto en diciembre de 1981."},
+            {"text": "Abril de 1982", "isCorrect": false, "rationale": "Ya gobernaba cuando inició la Guerra de Malvinas."},
+            {"text": "Enero de 1980", "isCorrect": false, "rationale": "Todavía gobernaba Videla en esa fecha."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 200,
+        "question": "¿Qué fecha renunció Galtieri?",
+        "options": [
+            {"text": "14 de junio de 1982", "isCorrect": false, "rationale": "Fecha de la rendición, no de su renuncia."},
+            {"text": "2 de abril de 1982", "isCorrect": false, "rationale": "Fecha del inicio de la guerra."},
+            {"text": "16 de junio de 1982", "isCorrect": true, "rationale": "Los generales forzaron su renuncia dos días después de la derrota."},
+            {"text": "10 de diciembre de 1983", "isCorrect": false, "rationale": "Fecha de asunción de Alfonsín, fin de la dictadura."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 201,
+        "question": "¿Quién fue designado presidente de facto para la transición?",
+        "options": [
+            {"text": "Leopoldo Galtieri", "isCorrect": false, "rationale": "Había renunciado tras la derrota de Malvinas."},
+            {"text": "Jorge Rafael Videla", "isCorrect": false, "rationale": "Ya no estaba en funciones en 1982."},
+            {"text": "Reynaldo Bignone", "isCorrect": true, "rationale": "Designado para conducir la transición democrática."},
+            {"text": "Emilio Eduardo Massera", "isCorrect": false, "rationale": "Había dejado la Junta años antes."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 202,
+        "question": "¿Qué período gobernó Reynaldo Bignone?",
+        "options": [
+            {"text": "1976-1981", "isCorrect": false, "rationale": "Período de gobierno de Videla."},
+            {"text": "1981-1982", "isCorrect": false, "rationale": "Período de gobierno de Galtieri."},
+            {"text": "1982-1983", "isCorrect": true, "rationale": "Último presidente de facto que condujo la transición."},
+            {"text": "1983-1989", "isCorrect": false, "rationale": "Período democrático de Alfonsín."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 203,
+        "question": "¿Qué medidas tomó Bignone para la transición democrática?",
+        "options": [
+            {"text": "Profundización de la represión", "isCorrect": false, "rationale": "Contrario a las medidas de transición."},
+            {"text": "Derogación parcial de censura, liberación de presos y convocatoria a elecciones", "isCorrect": true, "rationale": "Medidas tomadas para iniciar el retorno a la democracia."},
+            {"text": "Cierre del Congreso y los partidos", "isCorrect": false, "rationale": "Estas medidas ya habían sido tomadas en 1976."},
+            {"text": "Suspensión indefinida de elecciones", "isCorrect": false, "rationale": "Contrario a su objetivo de transición."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 204,
+        "question": "¿Qué ley intentaron los militares para autoamnistiarse?",
+        "options": [
+            {"text": "Ley de Obediencia Debida", "isCorrect": false, "rationale": "Fue sancionada posteriormente por el gobierno de Alfonsín."},
+            {"text": "Ley de Punto Final", "isCorrect": false, "rationale": "También fue posterior, durante el gobierno democrático."},
+            {"text": "Ley de Pacificación Nacional", "isCorrect": true, "rationale": "Intento de los militares de autoamnistiarse por sus crímenes."},
+            {"text": "Ley de Reconciliación", "isCorrect": false, "rationale": "No corresponde al nombre de la ley de autoamnistía."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 205,
+        "question": "¿Quién ganó las elecciones de octubre de 1983?",
+        "options": [
+            {"text": "Ítalo Lúder", "isCorrect": false, "rationale": "Candidato peronista que fue derrotado."},
+            {"text": "Ricardo Balbín", "isCorrect": false, "rationale": "Líder radical que había fallecido en 1981."},
+            {"text": "Raúl Alfonsín", "isCorrect": true, "rationale": "Candidato de la UCR que triunfó en las elecciones de 1983."},
+            {"text": "Carlos Menem", "isCorrect": false, "rationale": "Sería presidente después, en 1989."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 206,
+        "question": "¿A quién derrotó Raúl Alfonsín en 1983?",
+        "options": [
+            {"text": "Carlos Menem", "isCorrect": false, "rationale": "No fue candidato en 1983."},
+            {"text": "Ítalo Lúder", "isCorrect": true, "rationale": "Candidato del Partido Justicialista derrotado por Alfonsín."},
+            {"text": "Antonio Cafiero", "isCorrect": false, "rationale": "No fue el candidato peronista en esas elecciones."},
+            {"text": "Fernando de la Rúa", "isCorrect": false, "rationale": "Sería presidente décadas después."}
+        ],
+        "hint": ""
+    }
+]
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

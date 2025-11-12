@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 13,
+        "question": "¿Quién fue presidente entre 1938 y 1942 e intentó reducir el fraude electoral?",
+        "options": [
+            {"text": "Agustín P. Justo", "isCorrect": false, "rationale": "Fue presidente entre 1932-1938, antes de Ortiz."},
+            {"text": "Ramón S. Castillo", "isCorrect": false, "rationale": "Asumió tras la licencia de Ortiz en 1940."},
+            {"text": "Roberto M. Ortiz", "isCorrect": true, "rationale": "Intentó sanear las instituciones y reducir el fraude electoral."},
+            {"text": "José Félix Uriburu", "isCorrect": false, "rationale": "Gobernó entre 1930-1932."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 14,
+        "question": "¿Qué enfermedad obligó a Roberto M. Ortiz a tomar licencia en 1940?",
+        "options": [
+            {"text": "Cáncer", "isCorrect": false, "rationale": "No fue la enfermedad que afectó a Ortiz."},
+            {"text": "Diabetes y ceguera progresiva", "isCorrect": true, "rationale": "Enfermó gravemente y debió tomar licencia."},
+            {"text": "Enfermedad cardíaca", "isCorrect": false, "rationale": "No corresponde a la condición de Ortiz."},
+            {"text": "Tuberculosis", "isCorrect": false, "rationale": "No fue la enfermedad documentada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 15,
+        "question": "¿Quién asumió la presidencia tras la licencia de Ortiz?",
+        "options": [
+            {"text": "Agustín P. Justo", "isCorrect": false, "rationale": "Ya había terminado su mandato en 1938."},
+            {"text": "Pedro Pablo Ramírez", "isCorrect": false, "rationale": "Fue presidente de facto en 1943."},
+            {"text": "Ramón S. Castillo", "isCorrect": true, "rationale": "Asumió en 1942 tras la licencia de Ortiz."},
+            {"text": "Edelmiro J. Farrell", "isCorrect": false, "rationale": "Sucedió a Ramírez en 1944."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 16,
+        "question": "¿Qué caracterizó la presidencia de Ramón S. Castillo?",
+        "options": [
+            {"text": "Intentó eliminar el fraude electoral", "isCorrect": false, "rationale": "Al contrario, reanudó el fraude electoral."},
+            {"text": "El retorno del conservadurismo y el fraude electoral", "isCorrect": true, "rationale": "Representó el retorno del conservadurismo pleno."},
+            {"text": "La industrialización acelerada", "isCorrect": false, "rationale": "No fue el foco de su gobierno."},
+            {"text": "La apertura democrática", "isCorrect": false, "rationale": "Contradice lo que representó su gobierno."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 17,
+        "question": "¿Qué fecha marca el golpe militar conocido como 'Revolución del 43'?",
+        "options": [
+            {"text": "6 de septiembre de 1930", "isCorrect": false, "rationale": "Fecha del golpe de Uriburu."},
+            {"text": "4 de junio de 1943", "isCorrect": true, "rationale": "Golpe militar que derroca a Castillo."},
+            {"text": "17 de octubre de 1945", "isCorrect": false, "rationale": "Fecha del nacimiento del peronismo."},
+            {"text": "24 de febrero de 1946", "isCorrect": false, "rationale": "Fecha de las elecciones ganadas por Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 18,
+        "question": "¿Quién encabezó inicialmente el golpe de 1943 y duró solo tres días?",
+        "options": [
+            {"text": "Pedro Pablo Ramírez", "isCorrect": false, "rationale": "Reemplazó a Rawson, no lo encabezó inicialmente."},
+            {"text": "Edelmiro J. Farrell", "isCorrect": false, "rationale": "Sucedió a Ramírez en 1944."},
+            {"text": "Arturo Rawson", "isCorrect": true, "rationale": "Encabezó el golpe pero solo duró tres días en el poder."},
+            {"text": "Juan Domingo Perón", "isCorrect": false, "rationale": "Emergió después, desde la Secretaría de Trabajo."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 19,
+        "question": "¿Qué significan las siglas GOU?",
+        "options": [
+            {"text": "Grupo de Oficiales Unidos", "isCorrect": true, "rationale": "Logia nacionalista y católica dentro del Ejército."},
+            {"text": "Guardia Operativa Unificada", "isCorrect": false, "rationale": "Interpretación incorrecta de las siglas."},
+            {"text": "Gobierno de Orden Urgente", "isCorrect": false, "rationale": "No corresponde al nombre histórico."},
+            {"text": "Gestión Obrera Unida", "isCorrect": false, "rationale": "Invención que no tiene relación con el GOU militar."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 20,
+        "question": "¿Quién reemplazó a Arturo Rawson en 1943?",
+        "options": [
+            {"text": "Edelmiro J. Farrell", "isCorrect": false, "rationale": "Sucedió a Ramírez en 1944, no a Rawson."},
+            {"text": "Juan Domingo Perón", "isCorrect": false, "rationale": "No fue presidente de facto en ese momento."},
+            {"text": "Pedro Pablo Ramírez", "isCorrect": true, "rationale": "Lo reemplazó con apoyo de los oficiales del GOU."},
+            {"text": "Eduardo Ávalos", "isCorrect": false, "rationale": "Fue quien obligó a Perón a renunciar en 1945."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 21,
+        "question": "¿Quién sucedió a Pedro Pablo Ramírez en 1944?",
+        "options": [
+            {"text": "Arturo Rawson", "isCorrect": false, "rationale": "Ya había sido desplazado en 1943."},
+            {"text": "Juan Domingo Perón", "isCorrect": false, "rationale": "Aún no era presidente, estaba en la Secretaría de Trabajo."},
+            {"text": "Edelmiro J. Farrell", "isCorrect": true, "rationale": "Desplazó a Ramírez y asumió en 1944."},
+            {"text": "Eduardo Ávalos", "isCorrect": false, "rationale": "Fue un general que actuó contra Perón en 1945."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 22,
+        "question": "¿Desde qué secretaría impulsó Perón políticas laborales?",
+        "options": [
+            {"text": "Secretaría de Economía", "isCorrect": false, "rationale": "No fue desde donde Perón ganó apoyo obrero."},
+            {"text": "Secretaría de Trabajo y Previsión", "isCorrect": true, "rationale": "Desde allí impulsó políticas laborales y ganó apoyo trabajador."},
+            {"text": "Secretaría de Industria", "isCorrect": false, "rationale": "No corresponde al cargo que ocupó Perón."},
+            {"text": "Secretaría de Justicia", "isCorrect": false, "rationale": "No fue el área desde donde trabajó con obreros."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 23,
+        "question": "¿Qué fecha marca la renuncia forzada de Perón a sus cargos en 1945?",
+        "options": [
+            {"text": "17 de octubre de 1945", "isCorrect": false, "rationale": "Fecha de su liberación y vuelta triunfal."},
+            {"text": "4 de junio de 1943", "isCorrect": false, "rationale": "Fecha del golpe militar de 1943."},
+            {"text": "9 de octubre de 1945", "isCorrect": true, "rationale": "Eduardo Ávalos lo obliga a renunciar a todos sus cargos."},
+            {"text": "24 de febrero de 1946", "isCorrect": false, "rationale": "Fecha de las elecciones presidenciales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 24,
+        "question": "¿A dónde fue trasladado Perón tras su arresto en octubre de 1945?",
+        "options": [
+            {"text": "Isla Martín García", "isCorrect": true, "rationale": "Fue arrestado y trasladado a esta isla."},
+            {"text": "Ushuaia", "isCorrect": false, "rationale": "No fue el lugar de detención de Perón."},
+            {"text": "Campo de Mayo", "isCorrect": false, "rationale": "Base militar, no lugar de su detención."},
+            {"text": "La Plata", "isCorrect": false, "rationale": "No corresponde al sitio de su arresto."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 25,
+        "question": "¿Qué fecha marca el nacimiento del peronismo como movimiento político?",
+        "options": [
+            {"text": "4 de junio de 1943", "isCorrect": false, "rationale": "Fecha del golpe militar, no del nacimiento del peronismo."},
+            {"text": "9 de octubre de 1945", "isCorrect": false, "rationale": "Fecha del arresto de Perón."},
+            {"text": "17 de octubre de 1945", "isCorrect": true, "rationale": "Masiva movilización obrera que marca el nacimiento del peronismo."},
+            {"text": "24 de febrero de 1946", "isCorrect": false, "rationale": "Fecha de las elecciones, posterior al nacimiento del movimiento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 26,
+        "question": "¿Qué sucedió el 17 de octubre de 1945?",
+        "options": [
+            {"text": "Perón fue arrestado", "isCorrect": false, "rationale": "Fue arrestado el 9 de octubre."},
+            {"text": "Masiva movilización obrera en Plaza de Mayo exigiendo la liberación de Perón", "isCorrect": true, "rationale": "La CGT convocó y miles marcharon pidiendo su liberación."},
+            {"text": "Golpe militar contra Farrell", "isCorrect": false, "rationale": "No hubo golpe ese día."},
+            {"text": "Perón asumió la presidencia", "isCorrect": false, "rationale": "Asumió en junio de 1946."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 27,
+        "question": "¿Con qué porcentaje de votos ganó Perón las elecciones de 1946?",
+        "options": [
+            {"text": "45%", "isCorrect": false, "rationale": "Porcentaje inferior al real."},
+            {"text": "52%", "isCorrect": true, "rationale": "Derrotó a la Unión Democrática con este porcentaje."},
+            {"text": "60%", "isCorrect": false, "rationale": "Porcentaje superior al real."},
+            {"text": "48%", "isCorrect": false, "rationale": "Cifra menor a la victoria de Perón."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 28,
+        "question": "¿A quién derrotó Perón en las elecciones de 1946?",
+        "options": [
+            {"text": "La Concordancia", "isCorrect": false, "rationale": "No fue el frente opositor en 1946."},
+            {"text": "El Partido Conservador", "isCorrect": false, "rationale": "No era el nombre de la coalición opositora."},
+            {"text": "La Unión Democrática", "isCorrect": true, "rationale": "Coalición de partidos que se opuso a Perón."},
+            {"text": "La UCR", "isCorrect": false, "rationale": "La UCR era parte de la Unión Democrática."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 29,
+        "question": "¿Qué fecha asumió Perón su primer mandato?",
+        "options": [
+            {"text": "24 de febrero de 1946", "isCorrect": false, "rationale": "Fecha de las elecciones, no de la asunción."},
+            {"text": "17 de octubre de 1945", "isCorrect": false, "rationale": "Fecha del nacimiento del peronismo."},
+            {"text": "4 de junio de 1946", "isCorrect": true, "rationale": "Fecha de asunción de su primer mandato."},
+            {"text": "1 de mayo de 1946", "isCorrect": false, "rationale": "No fue la fecha de asunción."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 30,
+        "question": "¿Cómo eran catalogados los opositores durante el primer peronismo?",
+        "options": [
+            {"text": "Disidentes", "isCorrect": false, "rationale": "Término más suave que el usado."},
+            {"text": "Antipatria", "isCorrect": true, "rationale": "Los opositores eran catalogados como enemigos de la patria."},
+            {"text": "Oligarcas", "isCorrect": false, "rationale": "Término usado pero no el principal."},
+            {"text": "Conservadores", "isCorrect": false, "rationale": "Descripción política, no la etiqueta peyorativa usada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 31,
+        "question": "¿Qué significan las siglas IAPI?",
+        "options": [
+            {"text": "Instituto Argentino de Promoción del Intercambio", "isCorrect": true, "rationale": "Controlaba el comercio exterior y financiaba políticas sociales."},
+            {"text": "Instituto de Asesoría Política e Industrial", "isCorrect": false, "rationale": "Interpretación incorrecta de las siglas."},
+            {"text": "Inversión Argentina en Producción e Industria", "isCorrect": false, "rationale": "No corresponde al nombre histórico."},
+            {"text": "Integración Agraria y Protección Industrial", "isCorrect": false, "rationale": "Invención que no tiene relación con el IAPI."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 32,
+        "question": "¿En qué año se creó el IAPI?",
+        "options": [
+            {"text": "1943", "isCorrect": false, "rationale": "Año del golpe militar, no de creación del IAPI."},
+            {"text": "1945", "isCorrect": false, "rationale": "Año del nacimiento del peronismo, antes del IAPI."},
+            {"text": "1946", "isCorrect": true, "rationale": "Creado al inicio del primer gobierno peronista."},
+            {"text": "1947", "isCorrect": false, "rationale": "Año posterior a su creación."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 33,
+        "question": "¿Cuál era la función principal del IAPI?",
+        "options": [
+            {"text": "Regular los sindicatos", "isCorrect": false, "rationale": "No era función del IAPI."},
+            {"text": "Controlar el comercio exterior y financiar políticas sociales", "isCorrect": true, "rationale": "Compraba productos agropecuarios y los vendía más caros al exterior."},
+            {"text": "Administrar la educación pública", "isCorrect": false, "rationale": "No estaba relacionado con educación."},
+            {"text": "Planificar la industrialización", "isCorrect": false, "rationale": "Aunque financiaba industria, su función principal era otra."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 34,
+        "question": "¿Qué recursos transfería el IAPI según su modelo económico?",
+        "options": [
+            {"text": "Del exterior al país", "isCorrect": false, "rationale": "No era la dirección de la transferencia interna."},
+            {"text": "De la ciudad al campo", "isCorrect": false, "rationale": "Dirección opuesta a la real."},
+            {"text": "Del campo a la ciudad", "isCorrect": true, "rationale": "Transfería recursos del sector agropecuario al urbano-industrial."},
+            {"text": "De la industria al comercio", "isCorrect": false, "rationale": "No corresponde al modelo del IAPI."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 35,
+        "question": "¿Qué beneficios laborales se implementaron durante el primer gobierno de Perón?",
+        "options": [
+            {"text": "Solo aumento de salarios", "isCorrect": false, "rationale": "Hubo múltiples beneficios, no solo salarios."},
+            {"text": "Aumento de salarios, vacaciones pagas, aguinaldo y convenios colectivos", "isCorrect": true, "rationale": "Amplio conjunto de derechos laborales implementados."},
+            {"text": "Reducción de la jornada laboral únicamente", "isCorrect": false, "rationale": "Fue más amplio que solo esto."},
+            {"text": "Congelamiento de despidos", "isCorrect": false, "rationale": "No fue la medida principal implementada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 36,
+        "question": "¿Qué ley se sancionó en 1947 respecto al sufragio?",
+        "options": [
+            {"text": "Ley del voto obligatorio", "isCorrect": false, "rationale": "No fue la ley de 1947."},
+            {"text": "Ley del voto femenino", "isCorrect": true, "rationale": "Ley 13.010 que otorgó el voto a las mujeres."},
+            {"text": "Ley del voto secreto", "isCorrect": false, "rationale": "Ya existía desde la Ley Sáenz Peña de 1912."},
+            {"text": "Ley del sufragio universal", "isCorrect": false, "rationale": "Término general, no el nombre específico de la ley."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 37,
+        "question": "¿En qué porcentaje creció el padrón electoral con la Ley 13.010?",
+        "options": [
+            {"text": "50%", "isCorrect": false, "rationale": "Porcentaje menor al crecimiento real."},
+            {"text": "62%", "isCorrect": true, "rationale": "El padrón electoral creció significativamente con el voto femenino."},
+            {"text": "75%", "isCorrect": false, "rationale": "Porcentaje mayor al real."},
+            {"text": "40%", "isCorrect": false, "rationale": "Cifra inferior al crecimiento documentado."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 38,
+        "question": "¿Qué fundación creó Eva Perón?",
+        "options": [
+            {"text": "Fundación Justicia Social", "isCorrect": false, "rationale": "No fue el nombre de su fundación."},
+            {"text": "Fundación Eva Perón", "isCorrect": true, "rationale": "Símbolo de justicia social y conexión con trabajadores."},
+            {"text": "Fundación Ayuda Social Argentina", "isCorrect": false, "rationale": "Nombre incorrecto."},
+            {"text": "Fundación Descamisados", "isCorrect": false, "rationale": "No corresponde al nombre histórico."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 39,
+        "question": "¿Qué período abarcó el Primer Plan Quinquenal?",
+        "options": [
+            {"text": "1946–1951", "isCorrect": false, "rationale": "Comenzó un año después."},
+            {"text": "1947–1951", "isCorrect": true, "rationale": "Buscaba desarrollo industrial y pleno empleo."},
+            {"text": "1948–1952", "isCorrect": false, "rationale": "Fechas incorrectas del plan."},
+            {"text": "1945–1950", "isCorrect": false, "rationale": "Período anterior al inicio real del plan."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 40,
+        "question": "¿Qué problemas económicos comenzaron a aparecer a fines de los años 40?",
+        "options": [
+            {"text": "Deflación y superávit comercial", "isCorrect": false, "rationale": "Problemas opuestos a los reales."},
+            {"text": "Aumento del gasto público, inflación y pérdidas del IAPI", "isCorrect": true, "rationale": "Generó escasez de productos y problemas económicos."},
+            {"text": "Desempleo masivo", "isCorrect": false, "rationale": "No fue el problema principal de ese momento."},
+            {"text": "Caída de salarios", "isCorrect": false, "rationale": "Los salarios se habían incrementado, no caído."}
+        ],
+        "hint": ""
+    }
+] 
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

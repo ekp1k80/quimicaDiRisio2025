@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 41,
+        "question": "¿Quién encabezó el intento de golpe en septiembre de 1951?",
+        "options": [
+            {"text": "Eduardo Lonardi", "isCorrect": false, "rationale": "Lideró la Revolución Libertadora en 1955, no el golpe de 1951."},
+            {"text": "Benjamín Menéndez", "isCorrect": true, "rationale": "General que encabezó el levantamiento militar en Campo de Mayo."},
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Participó en la Revolución Libertadora de 1955."},
+            {"text": "Juan José Valle", "isCorrect": false, "rationale": "Encabezó un levantamiento en 1956, no en 1951."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 42,
+        "question": "¿Dónde se produjo el levantamiento militar de Benjamín Menéndez?",
+        "options": [
+            {"text": "Plaza de Mayo", "isCorrect": false, "rationale": "Lugar de manifestaciones, no del levantamiento militar."},
+            {"text": "Córdoba", "isCorrect": false, "rationale": "Fue el lugar de la Revolución Libertadora en 1955."},
+            {"text": "Campo de Mayo", "isCorrect": true, "rationale": "Base militar donde se produjo el levantamiento en septiembre de 1951."},
+            {"text": "Isla Martín García", "isCorrect": false, "rationale": "Lugar donde fue arrestado Perón en octubre de 1945."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 43,
+        "question": "¿Con qué sector reforzó Perón su alianza tras el golpe fallido de 1951?",
+        "options": [
+            {"text": "La Iglesia Católica", "isCorrect": false, "rationale": "La relación con la Iglesia se rompió en 1954-1955."},
+            {"text": "El Ejército", "isCorrect": false, "rationale": "Se alejó del Ejército tras el intento de golpe."},
+            {"text": "La CGT", "isCorrect": true, "rationale": "Reforzó su control político y alianza con los sindicatos."},
+            {"text": "Los partidos de oposición", "isCorrect": false, "rationale": "La oposición era catalogada como 'antipatria'."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 44,
+        "question": "¿Cuándo fue reelecto Perón para su segundo mandato?",
+        "options": [
+            {"text": "1946", "isCorrect": false, "rationale": "Año de su primera elección presidencial."},
+            {"text": "1949", "isCorrect": false, "rationale": "Año de la reforma constitucional que permitió la reelección."},
+            {"text": "1951", "isCorrect": true, "rationale": "Año de su reelección, asumiendo el 4 de junio de 1952."},
+            {"text": "1955", "isCorrect": false, "rationale": "Año en que fue derrocado, no reelecto."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 45,
+        "question": "¿Qué fecha murió Eva Perón?",
+        "options": [
+            {"text": "4 de junio de 1952", "isCorrect": false, "rationale": "Fecha de asunción del segundo mandato de Perón."},
+            {"text": "17 de octubre de 1951", "isCorrect": false, "rationale": "Aniversario del Día de la Lealtad peronista."},
+            {"text": "26 de julio de 1952", "isCorrect": true, "rationale": "Fecha de fallecimiento de Eva Perón, consagrada como símbolo del peronismo."},
+            {"text": "1 de mayo de 1954", "isCorrect": false, "rationale": "Fecha de la ruptura con la izquierda peronista en 1974."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 46,
+        "question": "¿Qué plan quinquenal se lanzó entre 1952 y 1955?",
+        "options": [
+            {"text": "Primer Plan Quinquenal", "isCorrect": false, "rationale": "Abarcó el período 1947-1951."},
+            {"text": "Segundo Plan Quinquenal", "isCorrect": true, "rationale": "Plan económico del segundo gobierno peronista (1952-1955)."},
+            {"text": "Plan Trienal", "isCorrect": false, "rationale": "Plan económico de períodos posteriores."},
+            {"text": "Tercer Plan Quinquenal", "isCorrect": false, "rationale": "No llegó a implementarse completamente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 47,
+        "question": "¿Cuáles fueron las características del Segundo Plan Quinquenal?",
+        "options": [
+            {"text": "Expansión del gasto público y emisión monetaria", "isCorrect": false, "rationale": "Características del final del primer gobierno, no del segundo plan."},
+            {"text": "Nacionalización de servicios públicos", "isCorrect": false, "rationale": "Política del primer gobierno peronista."},
+            {"text": "Austeridad fiscal, reajuste salarial y control de importaciones", "isCorrect": true, "rationale": "Medidas del Segundo Plan Quinquenal ante la crisis económica."},
+            {"text": "Apertura comercial y reducción de aranceles", "isCorrect": false, "rationale": "Contradice el modelo proteccionista peronista."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 48,
+        "question": "¿Qué medidas implementó Perón que causaron ruptura con la Iglesia?",
+        "options": [
+            {"text": "Creación del voto femenino", "isCorrect": false, "rationale": "Medida de 1947 que no causó conflicto con la Iglesia."},
+            {"text": "Ley del divorcio vincular y separación Iglesia-Estado", "isCorrect": true, "rationale": "Junto al desfinanciamiento de colegios religiosos y prohibición de procesiones."},
+            {"text": "Nacionalización de empresas extranjeras", "isCorrect": false, "rationale": "Política económica no relacionada con el conflicto religioso."},
+            {"text": "Reforma constitucional de 1949", "isCorrect": false, "rationale": "No fue causa de ruptura con la Iglesia."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 49,
+        "question": "¿Qué marcha religiosa se realizó el 11 de junio de 1955?",
+        "options": [
+            {"text": "Procesión de San Cayetano", "isCorrect": false, "rationale": "Procesión organizada por Ubaldini en los años 80."},
+            {"text": "Marcha del Corpus Christi", "isCorrect": true, "rationale": "Manifestación opositora al gobierno de Perón."},
+            {"text": "Peregrinación a Luján", "isCorrect": false, "rationale": "No fue el evento mencionado en junio de 1955."},
+            {"text": "Procesión de Semana Santa", "isCorrect": false, "rationale": "Se realiza en marzo/abril, no en junio."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 50,
+        "question": "¿Qué sucedió el 16 de junio de 1955?",
+        "options": [
+            {"text": "Renunció Perón", "isCorrect": false, "rationale": "Renunció el 19 de septiembre de 1955."},
+            {"text": "Comenzó la Revolución Libertadora", "isCorrect": false, "rationale": "Comenzó el 16 de septiembre de 1955."},
+            {"text": "Bombardeo de Plaza de Mayo", "isCorrect": true, "rationale": "Ataque aéreo que dejó cientos de víctimas civiles."},
+            {"text": "Murió Eva Perón", "isCorrect": false, "rationale": "Murió el 26 de julio de 1952."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 51,
+        "question": "¿Qué hicieron manifestantes tras el bombardeo de Plaza de Mayo?",
+        "options": [
+            {"text": "Se concentraron pacíficamente en la Casa Rosada", "isCorrect": false, "rationale": "La respuesta fue violenta, no pacífica."},
+            {"text": "Incendiaron iglesias en Buenos Aires", "isCorrect": true, "rationale": "Respuesta violenta al bombardeo y al conflicto con la Iglesia."},
+            {"text": "Organizaron una huelga general", "isCorrect": false, "rationale": "No fue la acción inmediata tras el bombardeo."},
+            {"text": "Marcharon al Congreso Nacional", "isCorrect": false, "rationale": "No corresponde a los hechos de junio de 1955."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 52,
+        "question": "¿Qué fecha comenzó la sublevación militar en Córdoba en 1955?",
+        "options": [
+            {"text": "11 de junio de 1955", "isCorrect": false, "rationale": "Fecha de la marcha del Corpus Christi."},
+            {"text": "16 de junio de 1955", "isCorrect": false, "rationale": "Fecha del bombardeo de Plaza de Mayo."},
+            {"text": "16 de septiembre de 1955", "isCorrect": true, "rationale": "Inicio de la Revolución Libertadora liderada por Lonardi."},
+            {"text": "23 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha en que Lonardi asumió el poder."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 53,
+        "question": "¿Quién lideró la Revolución Libertadora?",
+        "options": [
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Reemplazó a Lonardi en noviembre, no lideró la sublevación inicial."},
+            {"text": "Eduardo Lonardi", "isCorrect": true, "rationale": "General que encabezó la sublevación desde la Escuela de Artillería en Córdoba."},
+            {"text": "Benjamín Menéndez", "isCorrect": false, "rationale": "Intentó un golpe en 1951, no en 1955."},
+            {"text": "Juan José Valle", "isCorrect": false, "rationale": "Se levantó contra Aramburu en 1956."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 54,
+        "question": "¿Desde dónde se sublevaron los militares en Córdoba?",
+        "options": [
+            {"text": "Campo de Mayo", "isCorrect": false, "rationale": "Base militar en Buenos Aires, no en Córdoba."},
+            {"text": "Escuela de Artillería", "isCorrect": true, "rationale": "Lugar desde donde Lonardi inició la Revolución Libertadora."},
+            {"text": "Guarnición de Tandil", "isCorrect": false, "rationale": "No fue el lugar de inicio de la sublevación."},
+            {"text": "Base Naval de Puerto Belgrano", "isCorrect": false, "rationale": "Participó la Marina pero no fue el lugar de inicio en Córdoba."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 55,
+        "question": "¿Qué fecha renunció Perón en 1955?",
+        "options": [
+            {"text": "16 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha de inicio de la sublevación militar."},
+            {"text": "19 de septiembre de 1955", "isCorrect": true, "rationale": "Envió su renuncia al Congreso."},
+            {"text": "20 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha en que se refugió en la embajada."},
+            {"text": "23 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha en que Lonardi asumió el poder."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 56,
+        "question": "¿En qué embajada se refugió Perón?",
+        "options": [
+            {"text": "Embajada de España", "isCorrect": false, "rationale": "Residió allí más tarde durante su exilio, no inicialmente."},
+            {"text": "Embajada de Uruguay", "isCorrect": false, "rationale": "No fue el primer lugar de refugio."},
+            {"text": "Embajada de Paraguay", "isCorrect": true, "rationale": "Pidió asilo el 20 de septiembre de 1955."},
+            {"text": "Embajada de Chile", "isCorrect": false, "rationale": "No fue el país que le dio asilo inicialmente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 57,
+        "question": "¿Qué fecha asumió Lonardi como presidente provisional?",
+        "options": [
+            {"text": "16 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha de inicio de la sublevación."},
+            {"text": "19 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha de renuncia de Perón."},
+            {"text": "23 de septiembre de 1955", "isCorrect": true, "rationale": "Fecha en que Lonardi asumió como presidente provisional."},
+            {"text": "13 de noviembre de 1955", "isCorrect": false, "rationale": "Fecha en que fue desplazado por Aramburu."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 58,
+        "question": "¿Cómo se autodenominó el golpe que derrocó a Perón?",
+        "options": [
+            {"text": "Revolución Argentina", "isCorrect": false, "rationale": "Nombre del golpe de Onganía en 1966."},
+            {"text": "Revolución Libertadora", "isCorrect": true, "rationale": "Nombre del golpe militar que derrocó a Perón en 1955."},
+            {"text": "Revolución del 43", "isCorrect": false, "rationale": "Nombre del golpe militar de 1943."},
+            {"text": "Proceso de Reorganización Nacional", "isCorrect": false, "rationale": "Nombre de la dictadura de 1976-1983."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 59,
+        "question": "¿Cuál era el lema inicial de Lonardi?",
+        "options": [
+            {"text": "Dios, Patria y Hogar", "isCorrect": false, "rationale": "No fue el lema de Lonardi."},
+            {"text": "Orden y progreso", "isCorrect": false, "rationale": "Lema positivista, no de Lonardi."},
+            {"text": "Ni vencedores ni vencidos", "isCorrect": true, "rationale": "Postura conciliadora inicial de Lonardi."},
+            {"text": "Libertad o muerte", "isCorrect": false, "rationale": "No corresponde al lema de la Revolución Libertadora."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 60,
+        "question": "¿Qué fecha fue desplazado Lonardi?",
+        "options": [
+            {"text": "23 de septiembre de 1955", "isCorrect": false, "rationale": "Fecha en que asumió la presidencia."},
+            {"text": "13 de noviembre de 1955", "isCorrect": true, "rationale": "Desplazado por Aramburu, de línea más dura."},
+            {"text": "9 de junio de 1956", "isCorrect": false, "rationale": "Fecha del levantamiento de Valle."},
+            {"text": "1 de mayo de 1958", "isCorrect": false, "rationale": "Fecha de asunción de Frondizi."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 61,
+        "question": "¿Quién reemplazó a Lonardi en noviembre de 1955?",
+        "options": [
+            {"text": "Eduardo Lonardi", "isCorrect": false, "rationale": "Fue quien fue desplazado, no quien reemplazó."},
+            {"text": "Arturo Frondizi", "isCorrect": false, "rationale": "Asumió como presidente constitucional en 1958."},
+            {"text": "Juan Carlos Onganía", "isCorrect": false, "rationale": "Dio un golpe en 1966, no en 1955."},
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": true, "rationale": "General de línea dura que desplazó a Lonardi."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 62,
+        "question": "¿Qué se prohibió durante la proscripción del peronismo?",
+        "options": [
+            {"text": "Solo la participación electoral del partido peronista", "isCorrect": false, "rationale": "La prohibición fue mucho más amplia."},
+            {"text": "Nombrar a Perón, cantar la marcha peronista y usar símbolos peronistas", "isCorrect": true, "rationale": "Censura total sobre toda expresión vinculada al peronismo."},
+            {"text": "Únicamente las manifestaciones públicas", "isCorrect": false, "rationale": "La proscripción incluía mucho más que eso."},
+            {"text": "Solo los medios de comunicación peronistas", "isCorrect": false, "rationale": "La prohibición abarcaba toda expresión peronista."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 63,
+        "question": "¿Qué Constitución fue derogada por la Revolución Libertadora?",
+        "options": [
+            {"text": "Constitución de 1853", "isCorrect": false, "rationale": "Fue restaurada, no derogada."},
+            {"text": "Constitución de 1949", "isCorrect": true, "rationale": "La Constitución peronista fue derogada."},
+            {"text": "Constitución de 1957", "isCorrect": false, "rationale": "Fue sancionada después, no derogada."},
+            {"text": "Constitución de 1860", "isCorrect": false, "rationale": "No existió una Constitución en ese año."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 64,
+        "question": "¿A qué Constitución se volvió tras derogar la de 1949?",
+        "options": [
+            {"text": "Constitución de 1826", "isCorrect": false, "rationale": "Constitución del período unitario, no vigente."},
+            {"text": "Constitución de 1949 reformada", "isCorrect": false, "rationale": "Fue derogada completamente."},
+            {"text": "Constitución de 1853 con reformas", "isCorrect": true, "rationale": "Se restauró la Constitución original con algunas modificaciones."},
+            {"text": "Constitución de 1819", "isCorrect": false, "rationale": "Constitución muy anterior, no aplicable."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 65,
+        "question": "¿Qué fecha se produjo el levantamiento del general Juan José Valle?",
+        "options": [
+            {"text": "13 de noviembre de 1955", "isCorrect": false, "rationale": "Fecha del desplazamiento de Lonardi."},
+            {"text": "9 de junio de 1956", "isCorrect": true, "rationale": "Levantamiento de peronistas civiles y militares."},
+            {"text": "Septiembre de 1951", "isCorrect": false, "rationale": "Fecha del intento de golpe de Menéndez."},
+            {"text": "1 de mayo de 1958", "isCorrect": false, "rationale": "Fecha de asunción de Frondizi."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 66,
+        "question": "¿Cómo se conocen los fusilamientos ordenados por Aramburu en 1956?",
+        "options": [
+            {"text": "Masacre de Ezeiza", "isCorrect": false, "rationale": "Evento de 1973, no de 1956."},
+            {"text": "Fusilamientos de José León Suárez", "isCorrect": true, "rationale": "Represión brutal tras el levantamiento de Valle."},
+            {"text": "Noche de los Lápices", "isCorrect": false, "rationale": "Evento de la dictadura de 1976."},
+            {"text": "Masacre de Trelew", "isCorrect": false, "rationale": "Fusilamientos de 1972, no de 1956."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 67,
+        "question": "¿Aproximadamente cuántos fueron fusilados tras el levantamiento de Valle?",
+        "options": [
+            {"text": "Más de 100", "isCorrect": false, "rationale": "Cifra exagerada de los fusilamientos."},
+            {"text": "Menos de 10", "isCorrect": false, "rationale": "Cifra muy inferior a la real."},
+            {"text": "Más de 30", "isCorrect": true, "rationale": "Número aproximado de fusilados en la represión de Aramburu."},
+            {"text": "Exactamente 17", "isCorrect": false, "rationale": "No corresponde al número documentado."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 68,
+        "question": "¿Qué formas tomó la resistencia obrera peronista en 1956?",
+        "options": [
+            {"text": "Solo manifestaciones pacíficas", "isCorrect": false, "rationale": "La resistencia fue más diversa y clandestina."},
+            {"text": "Únicamente acciones legales y judiciales", "isCorrect": false, "rationale": "El peronismo estaba proscripto, dificultando acciones legales."},
+            {"text": "Huelgas ilegales, sabotajes, panfletos clandestinos y bombas caseras", "isCorrect": true, "rationale": "Formas de resistencia ante la proscripción y represión."},
+            {"text": "Campaña electoral dentro del sistema", "isCorrect": false, "rationale": "Imposible con el peronismo proscripto."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 69,
+        "question": "¿Dónde se realizó la Convención Constituyente de 1957?",
+        "options": [
+            {"text": "Buenos Aires", "isCorrect": false, "rationale": "No fue la sede de la Convención."},
+            {"text": "Córdoba", "isCorrect": false, "rationale": "Ciudad importante pero no sede de la Convención."},
+            {"text": "Santa Fe", "isCorrect": true, "rationale": "Ciudad donde se realizó la Convención para reemplazar la Constitución de 1949."},
+            {"text": "Paraná", "isCorrect": false, "rationale": "No fue la sede de la Convención de 1957."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 70,
+        "question": "¿Qué porcentaje de voto en blanco se registró en 1957?",
+        "options": [
+            {"text": "52%", "isCorrect": false, "rationale": "Porcentaje con que ganó Perón en 1946."},
+            {"text": "24%", "isCorrect": true, "rationale": "Voto en blanco impulsado por Perón desde el exilio."},
+            {"text": "60%", "isCorrect": false, "rationale": "Porcentaje demasiado alto para el voto en blanco."},
+            {"text": "10%", "isCorrect": false, "rationale": "Porcentaje muy inferior al real."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 71,
+        "question": "¿Quién impulsó el voto en blanco desde el exilio?",
+        "options": [
+            {"text": "Arturo Frondizi", "isCorrect": false, "rationale": "Candidato de la UCRI, no impulsó el voto en blanco."},
+            {"text": "Juan Domingo Perón", "isCorrect": true, "rationale": "Desde el exilio instruyó a sus seguidores votar en blanco."},
+            {"text": "Ricardo Balbín", "isCorrect": false, "rationale": "Líder radical, no promovió el voto en blanco."},
+            {"text": "Arturo Illia", "isCorrect": false, "rationale": "Candidato radical en 1963, no en 1957."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 72,
+        "question": "¿Qué artículo sobre derechos laborales se incorporó en la Constitución de 1957?",
+        "options": [
+            {"text": "Artículo 1", "isCorrect": false, "rationale": "No es el artículo de derechos laborales."},
+            {"text": "Artículo 14 bis", "isCorrect": true, "rationale": "Artículo sobre derechos laborales y sociales incorporado en 1957."},
+            {"text": "Artículo 25", "isCorrect": false, "rationale": "No corresponde a derechos laborales."},
+            {"text": "Artículo 75", "isCorrect": false, "rationale": "Artículo sobre atribuciones del Congreso, no derechos laborales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 73,
+        "question": "¿En cuántas organizaciones se dividió la CGT en 1957?",
+        "options": [
+            {"text": "Tres organizaciones", "isCorrect": false, "rationale": "No fue la división que ocurrió en 1957."},
+            {"text": "Dos organizaciones: 62 y 32", "isCorrect": true, "rationale": "División entre las 62 Organizaciones peronistas y las 32 Democráticas."},
+            {"text": "Cinco organizaciones", "isCorrect": false, "rationale": "Número incorrecto de divisiones."},
+            {"text": "No se dividió en 1957", "isCorrect": false, "rationale": "Sí hubo división tras el fracaso del Congreso Normalizador."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 74,
+        "question": "¿Qué tendencia tenían las '62 Organizaciones'?",
+        "options": [
+            {"text": "Comunista", "isCorrect": false, "rationale": "No era su orientación ideológica."},
+            {"text": "Antiperonista", "isCorrect": false, "rationale": "Eran de orientación opuesta."},
+            {"text": "Peronista", "isCorrect": true, "rationale": "Sector sindical de tendencia peronista."},
+            {"text": "Socialista democrática", "isCorrect": false, "rationale": "No era su identidad política."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 75,
+        "question": "¿Qué tendencia tenían las '32 Organizaciones Democráticas'?",
+        "options": [
+            {"text": "Peronista ortodoxa", "isCorrect": false, "rationale": "Eran del sector opuesto."},
+            {"text": "Antiperonista", "isCorrect": true, "rationale": "Más cercanas a los sectores que se oponían al peronismo."},
+            {"text": "Comunista revolucionaria", "isCorrect": false, "rationale": "No era su orientación principal."},
+            {"text": "Conservadora", "isCorrect": false, "rationale": "No era su identificación política principal."}
+        ],
+        "hint": ""
+    }
+]
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

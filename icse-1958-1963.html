@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+    {
+        "id": 76,
+        "question": "¿Quién ganó las elecciones de 1958?",
+        "options": [
+            {"text": "Arturo Illia", "isCorrect": false, "rationale": "Ganó las elecciones de 1963, no de 1958."},
+            {"text": "Arturo Frondizi", "isCorrect": true, "rationale": "Candidato de la UCRI que ganó con apoyo peronista."},
+            {"text": "Ricardo Balbín", "isCorrect": false, "rationale": "Fue candidato radical pero no ganó en 1958."},
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Era el dictador saliente, no candidato."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 77,
+        "question": "¿Con quién hizo un pacto secreto Frondizi para ganar?",
+        "options": [
+            {"text": "Con los militares antiperonistas", "isCorrect": false, "rationale": "Los militares desconfiaban de Frondizi por su pacto."},
+            {"text": "Con la Iglesia Católica", "isCorrect": false, "rationale": "No fue el actor principal del pacto electoral."},
+            {"text": "Con Juan Domingo Perón", "isCorrect": true, "rationale": "Pacto secreto desde el exilio para recibir apoyo peronista."},
+            {"text": "Con los sindicatos independientes", "isCorrect": false, "rationale": "Los sindicatos seguían a Perón, no actuaban independientemente."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 78,
+        "question": "¿Qué fecha asumió Frondizi la presidencia?",
+        "options": [
+            {"text": "1 de mayo de 1958", "isCorrect": true, "rationale": "Fecha de asunción tras ganar las elecciones."},
+            {"text": "4 de junio de 1958", "isCorrect": false, "rationale": "Fecha simbólica peronista, no de asunción de Frondizi."},
+            {"text": "12 de octubre de 1958", "isCorrect": false, "rationale": "Fecha de asunción de Illia en 1963."},
+            {"text": "1 de marzo de 1958", "isCorrect": false, "rationale": "Fecha incorrecta de asunción."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 79,
+        "question": "¿A qué partido pertenecía Frondizi?",
+        "options": [
+            {"text": "UCRP (Unión Cívica Radical del Pueblo)", "isCorrect": false, "rationale": "Era la otra fracción radical, opositora a Frondizi."},
+            {"text": "Partido Justicialista", "isCorrect": false, "rationale": "Recibió su apoyo pero no era peronista."},
+            {"text": "UCRI (Unión Cívica Radical Intransigente)", "isCorrect": true, "rationale": "Fracción radical desarrollista liderada por Frondizi."},
+            {"text": "Partido Demócrata Progresista", "isCorrect": false, "rationale": "Partido diferente, no el de Frondizi."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 80,
+        "question": "¿Qué tipo de política económica implementó Frondizi?",
+        "options": [
+            {"text": "Política de sustitución de importaciones cerrada", "isCorrect": false, "rationale": "Implementó apertura, no cierre económico."},
+            {"text": "Política de desarrollo industrial con inversión extranjera", "isCorrect": true, "rationale": "Abrió la economía especialmente al sector petrolero extranjero."},
+            {"text": "Política de nacionalización total", "isCorrect": false, "rationale": "Contradice su apertura a inversiones extranjeras."},
+            {"text": "Política de economía planificada estatal", "isCorrect": false, "rationale": "No implementó planificación centralizada."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 81,
+        "question": "¿A qué sectores abrió la economía Frondizi principalmente?",
+        "options": [
+            {"text": "Sector agrícola-ganadero", "isCorrect": false, "rationale": "No fue el sector prioritario de inversión extranjera."},
+            {"text": "Sector petrolero", "isCorrect": true, "rationale": "Abrió principalmente a inversiones petroleras extranjeras."},
+            {"text": "Sector textil", "isCorrect": false, "rationale": "No fue el foco principal de inversión extranjera."},
+            {"text": "Sector financiero bancario", "isCorrect": false, "rationale": "No fue el sector prioritario en su política desarrollista."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 82,
+        "question": "¿Con qué organismo internacional tomó créditos Frondizi?",
+        "options": [
+            {"text": "Banco Mundial", "isCorrect": false, "rationale": "No fue el organismo principal mencionado."},
+            {"text": "Banco Interamericano de Desarrollo", "isCorrect": false, "rationale": "No fue el organismo crediticio principal."},
+            {"text": "FMI (Fondo Monetario Internacional)", "isCorrect": true, "rationale": "Tomó créditos del FMI debido al gasto público e inflación."},
+            {"text": "CEPAL", "isCorrect": false, "rationale": "Es un organismo de estudios, no crediticio."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 83,
+        "question": "¿Qué plan de estado de conmoción amenazó con activar Frondizi?",
+        "options": [
+            {"text": "Plan CONINTES", "isCorrect": true, "rationale": "Estado de conmoción interna para enfrentar conflictos sindicales."},
+            {"text": "Plan Cóndor", "isCorrect": false, "rationale": "Corresponde a una época posterior, dictaduras de los 70."},
+            {"text": "Plan de Seguridad Nacional", "isCorrect": false, "rationale": "No fue el nombre del plan de Frondizi."},
+            {"text": "Plan de Defensa Interior", "isCorrect": false, "rationale": "No corresponde al plan mencionado en el documento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 84,
+        "question": "¿Qué frigorífico fue tomado en 1959?",
+        "options": [
+            {"text": "Frigorífico Swift", "isCorrect": false, "rationale": "No fue el frigorífico mencionado en las tomas."},
+            {"text": "Frigorífico Anglo", "isCorrect": false, "rationale": "No corresponde al frigorífico tomado en 1959."},
+            {"text": "Frigorífico Lisandro de la Torre", "isCorrect": true, "rationale": "Ubicado en Mataderos, fue tomado durante conflictos sindicales."},
+            {"text": "Frigorífico Armour", "isCorrect": false, "rationale": "No fue el frigorífico protagonista de la toma."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 85,
+        "question": "¿Quién fue designado ministro de Economía de línea liberal?",
+        "options": [
+            {"text": "José Alfredo Martínez de Hoz", "isCorrect": false, "rationale": "Fue ministro durante la dictadura de 1976-1981."},
+            {"text": "Celestino Rodrigo", "isCorrect": false, "rationale": "Fue ministro durante el gobierno de Isabel Perón."},
+            {"text": "Álvaro Alsogaray", "isCorrect": true, "rationale": "Aplicó ajustes severos con devaluación y reducción salarial."},
+            {"text": "Adalbert Krieger Vasena", "isCorrect": false, "rationale": "Fue ministro durante el gobierno de Onganía."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 86,
+        "question": "¿Qué medidas aplicó Álvaro Alsogaray?",
+        "options": [
+            {"text": "Aumento de salarios y subsidios sociales", "isCorrect": false, "rationale": "Aplicó medidas opuestas, de ajuste y reducción."},
+            {"text": "Nacionalización de empresas extranjeras", "isCorrect": false, "rationale": "Contradice su línea liberal."},
+            {"text": "Devaluación, reducción salarial y recorte del gasto público", "isCorrect": true, "rationale": "Ajuste severo que generó fuerte crisis social."},
+            {"text": "Control de precios y congelamiento tarifario", "isCorrect": false, "rationale": "Implementó liberalización, no controles."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 87,
+        "question": "¿Con quién se reunió secretamente Frondizi en 1961?",
+        "options": [
+            {"text": "Fidel Castro", "isCorrect": false, "rationale": "No fue con el líder cubano directamente."},
+            {"text": "Che Guevara", "isCorrect": true, "rationale": "Reunión que generó malestar en las Fuerzas Armadas."},
+            {"text": "Juan Domingo Perón", "isCorrect": false, "rationale": "Perón estaba en el exilio y no hubo reunión documentada."},
+            {"text": "Nikita Jrushchov", "isCorrect": false, "rationale": "No se reunió con el líder soviético."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 88,
+        "question": "¿En cuántas provincias ganó el peronismo en las elecciones de 1962?",
+        "options": [
+            {"text": "5 provincias", "isCorrect": false, "rationale": "Número menor al real de victorias peronistas."},
+            {"text": "9 provincias", "isCorrect": true, "rationale": "Victoria que provocó la intervención militar y el derrocamiento."},
+            {"text": "12 provincias", "isCorrect": false, "rationale": "Número superior al de victorias reales."},
+            {"text": "7 provincias", "isCorrect": false, "rationale": "Cifra incorrecta de provincias ganadas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 89,
+        "question": "¿Qué fecha fue derrocado Frondizi?",
+        "options": [
+            {"text": "29 de marzo de 1962", "isCorrect": true, "rationale": "Tras las victorias peronistas, los militares lo derrocan."},
+            {"text": "28 de junio de 1962", "isCorrect": false, "rationale": "Fecha incorrecta del derrocamiento."},
+            {"text": "1 de mayo de 1962", "isCorrect": false, "rationale": "No corresponde a la fecha del golpe."},
+            {"text": "12 de octubre de 1962", "isCorrect": false, "rationale": "Fecha posterior al derrocamiento."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 90,
+        "question": "¿Quién asumió tras el derrocamiento de Frondizi?",
+        "options": [
+            {"text": "Pedro Eugenio Aramburu", "isCorrect": false, "rationale": "Fue presidente de facto en 1955-1958."},
+            {"text": "Arturo Illia", "isCorrect": false, "rationale": "Asumió en 1963 tras elecciones."},
+            {"text": "José María Guido", "isCorrect": true, "rationale": "Presidente provisional del Senado con aval militar."},
+            {"text": "Juan Carlos Onganía", "isCorrect": false, "rationale": "Fue nombrado jefe del Ejército, no presidente aún."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 91,
+        "question": "¿Qué cargo tenía José María Guido antes de asumir?",
+        "options": [
+            {"text": "Vicepresidente de la Nación", "isCorrect": false, "rationale": "No era el vicepresidente."},
+            {"text": "Jefe del Ejército", "isCorrect": false, "rationale": "Era un cargo militar, Guido era civil."},
+            {"text": "Presidente provisional del Senado", "isCorrect": true, "rationale": "Asumió la presidencia desde este cargo constitucional."},
+            {"text": "Ministro del Interior", "isCorrect": false, "rationale": "No tenía este cargo ministerial."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 92,
+        "question": "¿Qué se comprometió a mantener Guido para poder asumir?",
+        "options": [
+            {"text": "La apertura económica al capital extranjero", "isCorrect": false, "rationale": "No fue la condición principal impuesta."},
+            {"text": "La proscripción del peronismo y del comunismo", "isCorrect": true, "rationale": "Firmó documento comprometiéndose a mantener ambas proscripciones."},
+            {"text": "El congelamiento de salarios", "isCorrect": false, "rationale": "No fue la condición política exigida."},
+            {"text": "La reforma constitucional", "isCorrect": false, "rationale": "No se comprometió a reformar la constitución."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 93,
+        "question": "¿Quién volvió al Ministerio de Economía durante Guido?",
+        "options": [
+            {"text": "Adalbert Krieger Vasena", "isCorrect": false, "rationale": "Fue ministro durante el gobierno de Onganía."},
+            {"text": "Álvaro Alsogaray", "isCorrect": true, "rationale": "Regresó para aplicar más ajuste, impuestos y endeudamiento."},
+            {"text": "José Alfredo Martínez de Hoz", "isCorrect": false, "rationale": "Fue ministro durante la última dictadura militar."},
+            {"text": "Federico Pinedo", "isCorrect": false, "rationale": "No fue el ministro durante el gobierno de Guido."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 94,
+        "question": "¿Cómo se llamaban las dos facciones militares durante el gobierno de Guido?",
+        "options": [
+            {"text": "Azules y Colorados", "isCorrect": true, "rationale": "Divisiones entre nacionalistas institucionalistas y liberales antiperonistas."},
+            {"text": "Halcones y Palomas", "isCorrect": false, "rationale": "Denominación que no corresponde a las facciones argentinas."},
+            {"text": "Duros y Blandos", "isCorrect": false, "rationale": "No fueron los nombres de las facciones militares."},
+            {"text": "Nacionalistas y Liberales", "isCorrect": false, "rationale": "Describe ideologías pero no los nombres oficiales."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 95,
+        "question": "¿Qué características tenían los militares 'Azules'?",
+        "options": [
+            {"text": "Liberales y fuertemente antiperonistas", "isCorrect": false, "rationale": "Estas eran características de los Colorados."},
+            {"text": "Nacionalistas y más institucionalistas", "isCorrect": true, "rationale": "Buscaban un camino más institucional y menos liberal."},
+            {"text": "Comunistas y revolucionarios", "isCorrect": false, "rationale": "Ninguna facción militar era comunista."},
+            {"text": "Apolíticos y profesionales", "isCorrect": false, "rationale": "Ambas facciones tenían posiciones políticas definidas."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 96,
+        "question": "¿Qué características tenían los militares 'Colorados'?",
+        "options": [
+            {"text": "Peronistas y nacionalistas", "isCorrect": false, "rationale": "Los Colorados eran antiperonistas."},
+            {"text": "Liberales y antiperonistas", "isCorrect": true, "rationale": "Defendían posiciones liberales y fuerte antiperonismo."},
+            {"text": "Socialistas y progresistas", "isCorrect": false, "rationale": "No correspondía a su ideología."},
+            {"text": "Conservadores católicos", "isCorrect": false, "rationale": "No era su característica definitoria principal."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 97,
+        "question": "¿A quién nombró Guido como jefe del Ejército?",
+        "options": [
+            {"text": "Alejandro Agustín Lanusse", "isCorrect": false, "rationale": "Fue presidente posterior, no jefe en ese momento."},
+            {"text": "Eduardo Lonardi", "isCorrect": false, "rationale": "Fue presidente en 1955, ya fallecido para 1962."},
+            {"text": "Juan Carlos Onganía", "isCorrect": true, "rationale": "Nombramiento que fortaleció al sector azul."},
+            {"text": "Leopoldo Galtieri", "isCorrect": false, "rationale": "Fue figura militar de época muy posterior."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 98,
+        "question": "¿Quién lideraba la CGT durante el gobierno de Guido?",
+        "options": [
+            {"text": "Saúl Ubaldini", "isCorrect": false, "rationale": "Fue figura sindical prominente en los años 80."},
+            {"text": "Augusto Vandor", "isCorrect": true, "rationale": "Intentaba reorganizar la CGT en ese período."},
+            {"text": "José Ignacio Rucci", "isCorrect": false, "rationale": "Fue secretario general durante el tercer gobierno de Perón."},
+            {"text": "Raimundo Ongaro", "isCorrect": false, "rationale": "Lideró la CGT de los Argentinos en época posterior."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 99,
+        "question": "¿Quién ganó las elecciones de 1963?",
+        "options": [
+            {"text": "Arturo Frondizi", "isCorrect": false, "rationale": "Había sido derrocado en 1962."},
+            {"text": "Ricardo Balbín", "isCorrect": false, "rationale": "Candidato radical que no ganó."},
+            {"text": "Arturo Illia", "isCorrect": true, "rationale": "Ganó gracias al voto en blanco impulsado por Perón."},
+            {"text": "Oscar Alende", "isCorrect": false, "rationale": "Candidato que no resultó ganador."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 100,
+        "question": "¿A qué partido pertenecía Arturo Illia?",
+        "options": [
+            {"text": "UCRI (Unión Cívica Radical Intransigente)", "isCorrect": false, "rationale": "Era el partido de Frondizi."},
+            {"text": "Partido Justicialista", "isCorrect": false, "rationale": "Estaba proscripto y era el partido peronista."},
+            {"text": "UCRP (Unión Cívica Radical del Pueblo)", "isCorrect": true, "rationale": "Fracción radical opuesta a la UCRI de Frondizi."},
+            {"text": "Partido Demócrata Progresista", "isCorrect": false, "rationale": "No era el partido de Illia."}
+        ],
+        "hint": ""
+    },
+    {
+        "id": 101,
+        "question": "¿Qué fecha asumió Illia la presidencia?",
+        "options": [
+            {"text": "1 de mayo de 1963", "isCorrect": false, "rationale": "Fecha tradicional pero incorrecta para Illia."},
+            {"text": "4 de junio de 1963", "isCorrect": false, "rationale": "Fecha simbólica peronista, no de Illia."},
+            {"text": "12 de octubre de 1963", "isCorrect": true, "rationale": "Fecha de asunción de Illia tras ganar las elecciones."},
+            {"text": "25 de mayo de 1963", "isCorrect": false, "rationale": "Fecha patria pero no de asunción de Illia."}
+        ],
+        "hint": ""
+    }
+]
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>
