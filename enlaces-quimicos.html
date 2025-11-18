@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "¿Qué es un ion?",
+    "options": [
+      {"text": "Un átomo o grupo de átomos con carga eléctrica", "isCorrect": true, "rationale": "Se forma por ganancia o pérdida de electrones."},
+      {"text": "Un átomo neutro con el mismo número de protones y electrones", "isCorrect": false, "rationale": "Eso describe un átomo neutro."},
+      {"text": "Una molécula que contiene enlaces covalentes", "isCorrect": false, "rationale": "Una molécula no implica ionización."},
+      {"text": "Un electrón libre en movimiento", "isCorrect": false, "rationale": "Confusión con corriente eléctrica."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es un enlace iónico, covalente y metálico? ¿Puede haber más de uno al mismo tiempo?",
+    "options": [
+      {"text": "Iónico: transferencia de electrones; covalente: compartición; metálico: deslocalización. Sí pueden coexistir.", "isCorrect": true, "rationale": "Compuestos coordinados y estructuras complejas pueden mezclar características."},
+      {"text": "Iónico: compartición de electrones; covalente: atracción electrostática; metálico: solo en gases. No pueden coexistir.", "isCorrect": false, "rationale": "Todas las definiciones están invertidas."},
+      {"text": "Los tres implican solo transferencia de electrones. Sí pueden coexistir.", "isCorrect": false, "rationale": "La afirmación es incorrecta."},
+      {"text": "Solo existe el enlace covalente. Los otros son variaciones del mismo.", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿De qué tipo de enlace están hechas las moléculas?",
+    "options": [
+      {"text": "Enlaces covalentes", "isCorrect": true, "rationale": "Las moléculas se forman por compartición de electrones."},
+      {"text": "Enlaces iónicos exclusivamente", "isCorrect": false, "rationale": "Los compuestos iónicos no forman moléculas."},
+      {"text": "Enlaces metálicos únicamente", "isCorrect": false, "rationale": "El enlace metálico forma redes, no moléculas."},
+      {"text": "Enlaces entre protones", "isCorrect": false, "rationale": "No existen enlaces químicos de este tipo."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es un compuesto binario?",
+    "options": [
+      {"text": "Un compuesto formado por dos elementos químicos distintos", "isCorrect": true, "rationale": "Esta es la definición correcta."},
+      {"text": "Un compuesto con dos moléculas unidas por enlaces iónicos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Un sistema con dos fases", "isCorrect": false, "rationale": "No implica composición química."},
+      {"text": "Cualquier mezcla homogénea", "isCorrect": false, "rationale": "Las mezclas no son compuestos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "En CH2F2, ¿cuántos enlaces covalentes simples, dobles y triples presenta su estructura de Lewis?",
+    "options": [
+      {"text": "4 enlaces simples, 0 dobles y 0 triples", "isCorrect": true, "rationale": "C-F y C-H son todos enlaces simples."},
+      {"text": "2 simples, 1 doble y 1 triple", "isCorrect": false, "rationale": "No existe tal estructura para CH2F2."},
+      {"text": "1 simple y 3 dobles", "isCorrect": false, "rationale": "No corresponde a la valencia del carbono."},
+      {"text": "Tres triples", "isCorrect": false, "rationale": "Imposible por valencia del carbono."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿SCl2 conduce corriente en estado sólido?",
+    "options": [
+      {"text": "No, porque es un compuesto molecular", "isCorrect": true, "rationale": "No posee iones libres en estado sólido."},
+      {"text": "Sí, porque todos los cloruros conducen", "isCorrect": false, "rationale": "Incorrecto; solo los iónicos lo hacen en fundido/solución."},
+      {"text": "Sí, porque tiene átomos con alta electronegatividad", "isCorrect": false, "rationale": "La electronegatividad no determina conductividad."},
+      {"text": "Solo si se calienta hasta ebullición", "isCorrect": false, "rationale": "No pasa a ser iónico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es una unión divalente?",
+    "options": [
+      {"text": "Una unión donde un átomo se enlaza con valencia 2", "isCorrect": true, "rationale": "Ej.: oxígeno formando dos enlaces."},
+      {"text": "Una unión entre dos moléculas idénticas", "isCorrect": false, "rationale": "No implica valencia."},
+      {"text": "Una unión con dos átomos metálicos", "isCorrect": false, "rationale": "No define valencia."},
+      {"text": "Una unión formada por dos pares de protones", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué sustancia conduce electricidad en estado líquido? (Mg, CCl4, Cl2O, P4)",
+    "options": [
+      {"text": "Mg", "isCorrect": true, "rationale": "El metal líquido permite movilidad electrónica."},
+      {"text": "CCl4", "isCorrect": false, "rationale": "Compuesto molecular no conductor."},
+      {"text": "Cl2O", "isCorrect": false, "rationale": "Compuesto covalente."},
+      {"text": "P4", "isCorrect": false, "rationale": "Molécula no conductora."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es el tipo de enlace que ocurre cuando los átomos comparten pares de electrones?",
+    "options": [
+      {"text": "Covalente", "isCorrect": true, "rationale": "Definición fundamental del enlace covalente."},
+      {"text": "Iónico", "isCorrect": false, "rationale": "Implica transferencia, no compartición."},
+      {"text": "Metálico", "isCorrect": false, "rationale": "Electrones deslocalizados."},
+      {"text": "Puente de hidrógeno", "isCorrect": false, "rationale": "Interacción intermolecular."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué tipo de enlace se explica por la atracción electrostática entre iones de carga opuesta?",
+    "options": [
+      {"text": "Enlace iónico", "isCorrect": true, "rationale": "Ocurre entre cationes y aniones."},
+      {"text": "Enlace covalente", "isCorrect": false, "rationale": "Se basa en compartición de electrones."},
+      {"text": "Enlace metálico", "isCorrect": false, "rationale": "Implica electrones deslocalizados."},
+      {"text": "Enlace de hidrógeno", "isCorrect": false, "rationale": "Es interacción débil."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué tipo de enlace predomina en redes cristalinas con iones de carga opuesta?",
+    "options": [
+      {"text": "Enlace iónico", "isCorrect": true, "rationale": "Forma redes cristalinas iónicas."},
+      {"text": "Covalente", "isCorrect": false, "rationale": "Forma moléculas o redes covalentes."},
+      {"text": "Metálico", "isCorrect": false, "rationale": "Se da entre metales."},
+      {"text": "Intermolecular", "isCorrect": false, "rationale": "No forma cristales de este tipo."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué tipo de enlace enlaza a los átomos que forman parte de una molécula?",
+    "options": [
+      {"text": "Enlace covalente", "isCorrect": true, "rationale": "Las moléculas se forman por enlaces covalentes."},
+      {"text": "Enlace iónico", "isCorrect": false, "rationale": "Los compuestos iónicos no forman moléculas."},
+      {"text": "Enlace metálico", "isCorrect": false, "rationale": "Solo aplica a metales."},
+      {"text": "Puentes de nitrógeno", "isCorrect": false, "rationale": "No existen."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué tipo de enlace enlaza a átomos cuyos electrones más energéticos pueden deslocalizarse?",
+    "options": [
+      {"text": "Metálico", "isCorrect": true, "rationale": "Los electrones forman un 'mar electrónico'."},
+      {"text": "Iónico", "isCorrect": false, "rationale": "No implica deslocalización."},
+      {"text": "Covalente", "isCorrect": false, "rationale": "Compartidos, no deslocalizados en red metálica."},
+      {"text": "Puente de hidrógeno", "isCorrect": false, "rationale": "Interacción débil."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la naturaleza del enlace iónico?",
+    "options": [
+      {"text": "Atracción electrostática entre iones positivos y negativos", "isCorrect": true, "rationale": "Concepto clave del enlace iónico."},
+      {"text": "Compartición de electrones", "isCorrect": false, "rationale": "Define enlace covalente."},
+      {"text": "Deslocalización electrónica", "isCorrect": false, "rationale": "Define enlace metálico."},
+      {"text": "Unión por fuerzas de Van der Waals", "isCorrect": false, "rationale": "Interacciones intermoleculares."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la naturaleza del enlace covalente?",
+    "options": [
+      {"text": "Compartición de pares de electrones entre átomos", "isCorrect": true, "rationale": "Definición fundamental."},
+      {"text": "Atracción entre iones", "isCorrect": false, "rationale": "Enlace iónico."},
+      {"text": "Deslocalización metálica", "isCorrect": false, "rationale": "Enlace metálico."},
+      {"text": "Superposición de núcleos", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la naturaleza del enlace metálico?",
+    "options": [
+      {"text": "Cationes metálicos inmersos en electrones deslocalizados", "isCorrect": true, "rationale": "Modelo del mar de electrones."},
+      {"text": "Compartición de electrones", "isCorrect": false, "rationale": "Define enlace covalente."},
+      {"text": "Atracción electrostática entre iones", "isCorrect": false, "rationale": "Define enlace iónico."},
+      {"text": "Unión por puentes de hidrógeno", "isCorrect": false, "rationale": "Interacción débil."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la polaridad de enlace?",
+    "options": [
+      {"text": "La diferencia de electronegatividad entre átomos enlazados", "isCorrect": true, "rationale": "Genera separación de cargas parciales."},
+      {"text": "La presencia de iones en una molécula", "isCorrect": false, "rationale": "Polaridad no implica ionización."},
+      {"text": "La capacidad de un átomo para formar múltiples enlaces", "isCorrect": false, "rationale": "Define valencia."},
+      {"text": "La densidad electrónica total de la molécula", "isCorrect": false, "rationale": "No define polaridad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el momento dipolar de un enlace?",
+    "options": [
+      {"text": "Un vector que representa la separación de cargas en un enlace", "isCorrect": true, "rationale": "Incluye magnitud y dirección."},
+      {"text": "La energía necesaria para romper un enlace", "isCorrect": false, "rationale": "Define energía de enlace."},
+      {"text": "La carga neta del átomo más electronegativo", "isCorrect": false, "rationale": "No representa el dipolo."},
+      {"text": "Un número que indica cuántos electrones comparte un enlace", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la regla del octeto?",
+    "options": [
+      {"text": "Tendencia de los átomos a completar 8 electrones en la capa de valencia", "isCorrect": true, "rationale": "Explica estabilidad química."},
+      {"text": "Norma que indica que todos los átomos deben tener 8 protones", "isCorrect": false, "rationale": "Sin relación."},
+      {"text": "Regla para contar números cuánticos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Indica que todos los enlaces deben ser dobles", "isCorrect": false, "rationale": "Falso."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuáles son excepciones a la regla del octeto?",
+    "options": [
+      {"text": "H, He, B, Be y átomos del tercer período con octetos expandidos", "isCorrect": true, "rationale": "Excepciones típicas."},
+      {"text": "Todos los gases nobles", "isCorrect": false, "rationale": "Cumplen o son estables sin enlazar."},
+      {"text": "Los halógenos exclusivamente", "isCorrect": false, "rationale": "Suelen cumplir el octeto."},
+      {"text": "Solo los metales alcalinos", "isCorrect": false, "rationale": "Pierden electrones, pero no son excepción general."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué vector representa el desplazamiento de electrones en un enlace?",
+    "options": [
+      {"text": "El dipolo de enlace", "isCorrect": true, "rationale": "Es un vector polar."},
+      {"text": "El vector masa", "isCorrect": false, "rationale": "No existe en enlace químico."},
+      {"text": "El momento angular", "isCorrect": false, "rationale": "Propiedad cuántica."},
+      {"text": "El vector orbital", "isCorrect": false, "rationale": "No define polaridad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo varía la polaridad de enlace?",
+    "options": [
+      {"text": "Aumenta con la diferencia de electronegatividad entre átomos", "isCorrect": true, "rationale": "Mayor ΔEN → mayor polaridad."},
+      {"text": "Disminuye con el número de protones", "isCorrect": false, "rationale": "Sin relación directa."},
+      {"text": "Depende solo de la masa atómica", "isCorrect": false, "rationale": "No define polaridad."},
+      {"text": "Aumenta cuando el átomo más pesado está a la derecha", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  }  ,
+  {
+    "question": "¿Qué es el número electrónico de valencia?",
+    "options": [
+      {"text": "El número de electrones en la capa de valencia de un átomo", "isCorrect": true, "rationale": "Determina la capacidad de enlazarse."},
+      {"text": "El número de protones en el núcleo", "isCorrect": false, "rationale": "Eso define el número atómico."},
+      {"text": "La cantidad de enlaces que puede formar un ion", "isCorrect": false, "rationale": "Relacionado pero no es definición."},
+      {"text": "La carga neta de un átomo neutro", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo se puede saber si una sustancia va a cumplir la regla del octeto?",
+    "options": [
+      {"text": "Contando electrones de valencia y distribuyéndolos entre átomos", "isCorrect": true, "rationale": "Método clásico de Lewis."},
+      {"text": "Midiendo su densidad", "isCorrect": false, "rationale": "No tiene relación."},
+      {"text": "Midiendo la electronegatividad del átomo central solamente", "isCorrect": false, "rationale": "Insuficiente."},
+      {"text": "Por su punto de fusión", "isCorrect": false, "rationale": "No determina octeto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el estado de oxidación?",
+    "options": [
+      {"text": "Carga aparente que tendría un átomo si todos los enlaces fueran iónicos", "isCorrect": true, "rationale": "Definición formal."},
+      {"text": "Número de electrones totales de un átomo", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Número de protones en un átomo", "isCorrect": false, "rationale": "Define número atómico."},
+      {"text": "Diferencia de masa entre isotopos", "isCorrect": false, "rationale": "Sin relación."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuándo el estado de oxidación del hidrógeno es negativo?",
+    "options": [
+      {"text": "Cuando está enlazado a un metal (hidruros metálicos)", "isCorrect": true, "rationale": "El H se comporta como anión."},
+      {"text": "Cuando está en agua", "isCorrect": false, "rationale": "En agua es +1."},
+      {"text": "Cuando forma H2", "isCorrect": false, "rationale": "H2 es 0."},
+      {"text": "Nunca es negativo", "isCorrect": false, "rationale": "Existen hidruros metálicos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el vector del dipolo de enlace?",
+    "options": [
+      {"text": "Vector que apunta del átomo menos electronegativo al más electronegativo", "isCorrect": true, "rationale": "Indica dirección del desplazamiento electrónico."},
+      {"text": "Vector que mide la longitud del enlace", "isCorrect": false, "rationale": "Longitud no es dipolo."},
+      {"text": "Vector que apunta del núcleo al electrón", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Vector perpendicular al enlace", "isCorrect": false, "rationale": "No corresponde."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el carácter iónico?",
+    "options": [
+      {"text": "Grado de transferencia de electrones en un enlace", "isCorrect": true, "rationale": "Mayor diferencia de electronegatividad → mayor carácter iónico."},
+      {"text": "Número de protones que un átomo pierde", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Cantidad de electrones compartidos", "isCorrect": false, "rationale": "Caracteriza covalencia, no iónico."},
+      {"text": "Longitud del enlace", "isCorrect": false, "rationale": "No define carácter iónico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la longitud de enlace?",
+    "options": [
+      {"text": "Distancia promedio entre los núcleos de dos átomos enlazados", "isCorrect": true, "rationale": "Definición estándar."},
+      {"text": "Distancia entre dos electrones compartidos", "isCorrect": false, "rationale": "No se mide entre electrones."},
+      {"text": "Número de enlaces entre átomos", "isCorrect": false, "rationale": "Esto indica tipo de enlace."},
+      {"text": "Distancia de un átomo al vacío", "isCorrect": false, "rationale": "Sin sentido químico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo saber cuándo se tienen enlaces simples, dobles o triples?",
+    "options": [
+      {"text": "Contando los pares de electrones compartidos entre dos átomos", "isCorrect": true, "rationale": "1 par → simple; 2 pares → doble; 3 pares → triple."},
+      {"text": "Por la electronegatividad de los átomos", "isCorrect": false, "rationale": "Define polaridad, no multiplicidad."},
+      {"text": "Midiendo la densidad de la sustancia", "isCorrect": false, "rationale": "Sin relación."},
+      {"text": "Por el número de protones", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos iónicos conducen electricidad fundidos o en solución pero no sólidos?",
+    "options": [
+      {"text": "Porque los iones están libres para moverse solo en estado líquido o acuoso", "isCorrect": true, "rationale": "Los sólidos tienen iones fijos en la red cristalina."},
+      {"text": "Porque los electrones no existen en sólidos", "isCorrect": false, "rationale": "Los electrones sí existen; no conducen porque iones no se mueven."},
+      {"text": "Porque los sólidos son siempre covalentes", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Porque el calor destruye el enlace iónico", "isCorrect": false, "rationale": "Falso."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos iónicos tienen generalmente puntos de fusión y ebullición altos?",
+    "options": [
+      {"text": "Debido a la fuerte atracción electrostática entre iones", "isCorrect": true, "rationale": "Requiere mucha energía para romper la red."},
+      {"text": "Porque tienen enlaces covalentes débiles", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Porque contienen gases nobles", "isCorrect": false, "rationale": "Sin relación."},
+      {"text": "Porque son líquidos a temperatura ambiente", "isCorrect": false, "rationale": "No es verdad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos moleculares no son conductores de electricidad en ningún estado?",
+    "options": [
+      {"text": "Porque no tienen iones libres ni electrones móviles", "isCorrect": true, "rationale": "Carecen de portadores de carga."},
+      {"text": "Porque los enlaces son demasiado cortos", "isCorrect": false, "rationale": "No tiene relación."},
+      {"text": "Porque son sólidos cristalinos", "isCorrect": false, "rationale": "No todos los sólidos son no conductores."},
+      {"text": "Porque la polaridad siempre es cero", "isCorrect": false, "rationale": "No necesariamente."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es un catión divalente?",
+    "options": [
+      {"text": "Un ion con carga +2", "isCorrect": true, "rationale": "Ej.: Ca²⁺, Mg²⁺."},
+      {"text": "Un ion con carga -2", "isCorrect": false, "rationale": "Eso sería un anión divalente."},
+      {"text": "Un ion con dos electrones libres", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Un ion que forma dos enlaces covalentes", "isCorrect": false, "rationale": "Confusión con valencia."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el ion más estable de una especie?",
+    "options": [
+      {"text": "El ion que cumple la regla del octeto y tiene mínima energía", "isCorrect": true, "rationale": "Estabilidad se relaciona con octeto completo."},
+      {"text": "El ion con mayor número de protones", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "El ion con carga +1 siempre", "isCorrect": false, "rationale": "Depende del elemento."},
+      {"text": "El ion que forma enlaces triples", "isCorrect": false, "rationale": "No define estabilidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Nombrar compuestos inorgánicos con el estado de oxidación pedido (nomenclatura primer parcial)",
+    "options": [
+      {"text": "Se aplican prefijos y sufijos según número de oxidación y reglas IUPAC", "isCorrect": true, "rationale": "Método estándar de nomenclatura."},
+      {"text": "Se nombran al azar según la masa molecular", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Solo se usan nombres comunes", "isCorrect": false, "rationale": "No cumple el objetivo de la pregunta."},
+      {"text": "Se usan solo símbolos sin números", "isCorrect": false, "rationale": "No permite identificar estado de oxidación."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el carácter iónico?",
+    "options": [
+      {"text": "Grado de transferencia de electrones entre átomos", "isCorrect": true, "rationale": "Se repite como pregunta conceptual."},
+      {"text": "Número de protones compartidos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Longitud de enlace en picómetros", "isCorrect": false, "rationale": "No define carácter iónico."},
+      {"text": "Momento dipolar de la molécula", "isCorrect": false, "rationale": "Relacionado pero no lo define."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Ecuación de un catión y de un anión",
+    "options": [
+      {"text": "Na → Na⁺ + e⁻; Cl + e⁻ → Cl⁻", "isCorrect": true, "rationale": "Ejemplo clásico de ionización y ganancia de electrones."},
+      {"text": "Na + e⁻ → Na⁺; Cl → Cl⁻ + e⁻", "isCorrect": false, "rationale": "Se invierte la ganancia/pérdida de electrones."},
+      {"text": "Na → Na²⁺ + 2e⁻; Cl → Cl⁺ + e⁻", "isCorrect": false, "rationale": "No corresponde a cargas típicas."},
+      {"text": "Na → Na⁻; Cl → Cl⁺", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los compuestos ternarios y cuaternarios?",
+    "options": [
+      {"text": "Ternarios: 3 elementos; cuaternarios: 4 elementos", "isCorrect": true, "rationale": "Definición clásica de composición."},
+      {"text": "Ternarios: 2 elementos; cuaternarios: 3 elementos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Ternarios: 3 moléculas; cuaternarios: 4 moléculas", "isCorrect": false, "rationale": "No define composición química."},
+      {"text": "Ternarios: sólidos; cuaternarios: líquidos", "isCorrect": false, "rationale": "Sin relación."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la fórmula mínima de una sustancia?",
+    "options": [
+      {"text": "La fórmula con menor proporción entera de átomos de cada elemento", "isCorrect": true, "rationale": "También llamada fórmula empírica."},
+      {"text": "La fórmula molecular exacta", "isCorrect": false, "rationale": "No necesariamente mínima."},
+      {"text": "La fórmula que incluye todos los isótopos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "La fórmula que indica estado de agregación", "isCorrect": false, "rationale": "No es función de fórmula mínima."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la fórmula empírica de una sustancia?",
+    "options": [
+      {"text": "Expresa la proporción más simple de átomos en un compuesto", "isCorrect": true, "rationale": "Definición estándar."},
+      {"text": "Es la fórmula que indica la geometría molecular", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Es la fórmula que indica los enlaces dobles y triples", "isCorrect": false, "rationale": "No necesariamente."},
+      {"text": "Es la fórmula que solo sirve para compuestos iónicos", "isCorrect": false, "rationale": "No es exclusiva de iónicos."}
+    ],
+    "hint": ""
+  }
+]
+
+
+
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionData.options.sort(
+                () => Math.random() - 0.5
+            )
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

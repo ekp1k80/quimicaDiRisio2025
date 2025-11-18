@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "¿Qué es la polaridad? ¿Qué es una sustancia polar y otra no polar?",
+    "options": [
+      {"text": "Polaridad indica distribución desigual de electrones; sustancia polar tiene dipolo, no polar no", "isCorrect": true, "rationale": "Definición de polaridad y ejemplos."},
+      {"text": "Polaridad indica punto de fusión; polar funde más rápido", "isCorrect": false, "rationale": "Confunde propiedad física con polaridad."},
+      {"text": "Polaridad depende de tamaño de molécula; moléculas grandes son polares", "isCorrect": false, "rationale": "Incorrecto; no depende solo del tamaño."},
+      {"text": "Sustancias polares tienen enlaces simples; no polares enlaces dobles", "isCorrect": false, "rationale": "Incorrecto; el tipo de enlace no determina polaridad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué sustancias forman redes cristalinas?",
+    "options": [
+      {"text": "Sustancias iónicas y algunas covalentes", "isCorrect": true, "rationale": "Ejemplos: NaCl (iónico), SiO2 (covalente)." },
+      {"text": "Solo compuestos moleculares", "isCorrect": false, "rationale": "Compuestos moleculares suelen formar sólidos moleculares, no redes."},
+      {"text": "Solo gases a presión alta", "isCorrect": false, "rationale": "Incorrecto; redes cristalinas son sólidas."},
+      {"text": "Sustancias líquidas", "isCorrect": false, "rationale": "Las redes cristalinas son sólidas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Existen redes cristalinas con iones de carga opuesta? ¿Qué son?",
+    "options": [
+      {"text": "Sí, son redes iónicas con cationes y aniones alternados", "isCorrect": true, "rationale": "Ejemplo típico: NaCl."},
+      {"text": "No, los iones no forman redes", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Sí, pero solo en líquidos", "isCorrect": false, "rationale": "Redes iónicas son sólidas."},
+      {"text": "No, solo moléculas neutras forman redes", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿SCl2 conduce corriente en estado sólido?",
+    "options": [
+      {"text": "No, porque no tiene iones libres en sólido", "isCorrect": true, "rationale": "Es un sólido molecular, no iónico."},
+      {"text": "Sí, porque es polar", "isCorrect": false, "rationale": "Polaridad no garantiza conductividad."},
+      {"text": "Sí, en presencia de humedad", "isCorrect": false, "rationale": "No es conductor iónico."},
+      {"text": "No, porque sus enlaces son metálicos", "isCorrect": false, "rationale": "No tiene enlaces metálicos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Indicar la sustancia que conduce electricidad en estado líquido (a: Mg b: CCl4 c: Cl2O d: P4)",
+    "options": [
+      {"text": "Mg", "isCorrect": true, "rationale": "Es metálico, conduce electricidad fundido."},
+      {"text": "CCl4", "isCorrect": false, "rationale": "Molecular no conductor."},
+      {"text": "Cl2O", "isCorrect": false, "rationale": "Molecular no conductor."},
+      {"text": "P4", "isCorrect": false, "rationale": "Molecular no conductor."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Indicar la sustancia que no presenta interacción dipolo-dipolo (a: HBr b: Cs2 c: CH3Cl d: NH3)",
+    "options": [
+      {"text": "Cs2", "isCorrect": true, "rationale": "Es metálico, sin dipolo permanente."},
+      {"text": "HBr", "isCorrect": false, "rationale": "Polar, tiene dipolo."},
+      {"text": "CH3Cl", "isCorrect": false, "rationale": "Polar, interacción dipolo-dipolo."},
+      {"text": "NH3", "isCorrect": false, "rationale": "Polar, interacción dipolo-dipolo y H."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Las moléculas polares tienen interacción de London?",
+    "options": [
+      {"text": "Sí, todas las moléculas presentan fuerzas de London", "isCorrect": true, "rationale": "London siempre presente en todas las moléculas."},
+      {"text": "No, solo las no polares", "isCorrect": false, "rationale": "Incorrecto; polares también las tienen."},
+      {"text": "Solo si son grandes", "isCorrect": false, "rationale": "Tamaño afecta magnitud, no presencia."},
+      {"text": "Solo si hay hidrógeno", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo sabes que una molécula tiene menor polaridad que otra?",
+    "options": [
+      {"text": "Si su diferencia de electronegatividad es menor", "isCorrect": true, "rationale": "Polaridad depende de diferencia de electronegatividad."},
+      {"text": "Si su masa molar es menor", "isCorrect": false, "rationale": "Masa no determina polaridad."},
+      {"text": "Si es más grande", "isCorrect": false, "rationale": "Tamaño no determina polaridad."},
+      {"text": "Si tiene enlaces dobles", "isCorrect": false, "rationale": "Tipo de enlace no es criterio único."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Sabiendo que H2O (P. eb 100 °C) es angular y I2 tiene P. eb 184,3 °C, indicar cuál opción es correcta",
+    "options": [
+      {"text": "I2 tiene mayor punto de ebullición por fuerzas de London fuertes", "isCorrect": true, "rationale": "I2 es grande, fuerzas de London predominan."},
+      {"text": "H2O tiene mayor punto por ser polar", "isCorrect": false, "rationale": "P. ebullición depende de interacción global."},
+      {"text": "Ambos tienen el mismo tipo de fuerzas", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "H2O tiene mayor P. eb por ser angular", "isCorrect": false, "rationale": "Incorrecto; I2 eb > H2O."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el vector del dipolo de enlace?",
+    "options": [
+      {"text": "Una flecha que apunta del átomo menos electronegativo al más electronegativo", "isCorrect": true, "rationale": "Definición estándar de dipolo de enlace."},
+      {"text": "Una flecha que indica longitud de enlace", "isCorrect": false, "rationale": "Confunde con geometría."},
+      {"text": "Una magnitud de energía de enlace", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Una representación de ángulo molecular", "isCorrect": false, "rationale": "No corresponde a ángulo."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el carácter iónico?",
+    "options": [
+      {"text": "Porcentaje de transferencia de electrones en un enlace", "isCorrect": true, "rationale": "Mide cuánto el enlace es iónico vs covalente."},
+      {"text": "Capacidad de un compuesto de disolverse en agua", "isCorrect": false, "rationale": "Incorrecto, es solubilidad."},
+      {"text": "Longitud de enlace entre átomos", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Magnitud de polaridad molecular total", "isCorrect": false, "rationale": "Es distinto de carácter iónico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son iones poliatómicos?",
+    "options": [
+      {"text": "Iones formados por varios átomos unidos covalentemente con carga neta", "isCorrect": true, "rationale": "Definición de ion poliatómico."},
+      {"text": "Iones formados por un solo átomo con carga", "isCorrect": false, "rationale": "Son iones monoatómicos."},
+      {"text": "Moléculas neutras con carga interna", "isCorrect": false, "rationale": "Incorrecto, necesitan carga neta."},
+      {"text": "Átomos que ganan electrones solo parcialmente", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la longitud de enlace?",
+    "options": [
+      {"text": "La distancia promedio entre núcleos de dos átomos unidos", "isCorrect": true, "rationale": "Definición clásica."},
+      {"text": "La energía de ruptura de un enlace", "isCorrect": false, "rationale": "Confunde longitud con energía."},
+      {"text": "La diferencia de electronegatividad entre átomos", "isCorrect": false, "rationale": "No corresponde."},
+      {"text": "El ángulo entre enlaces de un átomo central", "isCorrect": false, "rationale": "Incorrecto, es ángulo de enlace."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Relacionar las interacciones entre moléculas distintas con la solubilidad (miscibilidad) mutua",
+    "options": [
+      {"text": "Moléculas con interacciones similares son miscibles entre sí", "isCorrect": true, "rationale": "Regla “lo semejante disuelve lo semejante”."},
+      {"text": "Moléculas grandes siempre se disuelven", "isCorrect": false, "rationale": "Tamaño no garantiza solubilidad."},
+      {"text": "Moléculas no polares son miscibles con polares", "isCorrect": false, "rationale": "Incorrecto, son inmiscibles generalmente."},
+      {"text": "Fuerzas de London impiden solubilidad", "isCorrect": false, "rationale": "Incorrecto, contribuyen a solubilidad en no polares."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo se explica la solubilidad de compuestos iónicos en agua?",
+    "options": [
+      {"text": "El agua rodea iones y estabiliza mediante interacciones dipolo-ion", "isCorrect": true, "rationale": "Concepto de solvatación iónica."},
+      {"text": "El agua reacciona químicamente con los iones", "isCorrect": false, "rationale": "No siempre hay reacción química."},
+      {"text": "Los iones pierden electrones y se disuelven", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Los iones permanecen unidos sin interacción", "isCorrect": false, "rationale": "Contradice la solubilidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos iónicos conducen electricidad fundidos o en solución pero no sólidos?",
+    "options": [
+      {"text": "Porque en sólido los iones están fijos; libres al fundirse o disolverse", "isCorrect": true, "rationale": "Necesitan movilidad iónica para conducir."},
+      {"text": "Porque el sólido no es polar", "isCorrect": false, "rationale": "Polaridad no garantiza conductividad."},
+      {"text": "Porque solo los electrones libres conducen", "isCorrect": false, "rationale": "Incorrecto, aquí participan iones."},
+      {"text": "Porque la temperatura baja impide el flujo", "isCorrect": false, "rationale": "No es la causa principal."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos iónicos tienen generalmente puntos de fusión y ebullición altos?",
+    "options": [
+      {"text": "Por fuertes interacciones electrostáticas entre iones", "isCorrect": true, "rationale": "Energía de red elevada."},
+      {"text": "Por su masa molecular grande", "isCorrect": false, "rationale": "No depende principalmente de la masa."},
+      {"text": "Por ser polares", "isCorrect": false, "rationale": "Polaridad sola no determina P. fusión/eb."},
+      {"text": "Porque son líquidos a temperatura ambiente", "isCorrect": false, "rationale": "Incorrecto, son sólidos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué los compuestos moleculares no son conductores de electricidad en ningún estado?",
+    "options": [
+      {"text": "Porque no tienen iones libres ni electrones móviles", "isCorrect": true, "rationale": "No hay partículas cargadas móviles."},
+      {"text": "Porque son siempre sólidos", "isCorrect": false, "rationale": "Algunos son líquidos o gases."},
+      {"text": "Porque no son polares", "isCorrect": false, "rationale": "Polaridad no garantiza conductividad."},
+      {"text": "Porque tienen enlaces covalentes", "isCorrect": false, "rationale": "Covalescentes no implica ausencia de conductividad siempre (ej. grafito)."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo saber cuándo las moléculas orgánicas son polares o no polares?",
+    "options": [
+      {"text": "Si tienen grupos con electronegatividad diferente y geometría asimétrica, son polares", "isCorrect": true, "rationale": "Polaridad depende de dipolos y geometría."},
+      {"text": "Si son grandes, son polares", "isCorrect": false, "rationale": "Tamaño no determina polaridad."},
+      {"text": "Si solo tienen enlaces C-H, son polares", "isCorrect": false, "rationale": "C-H casi no es polar."},
+      {"text": "Si tienen enlaces dobles, son siempre no polares", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo saber cuándo las moléculas orgánicas pueden formar enlaces de hidrógeno con agua?",
+    "options": [
+      {"text": "Si tienen H unido a O, N o F, pueden formar enlaces H", "isCorrect": true, "rationale": "Criterio clásico de enlace H."},
+      {"text": "Si son moléculas grandes", "isCorrect": false, "rationale": "Tamaño no determina enlace H."},
+      {"text": "Si contienen enlaces C=C", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Si son aromáticas", "isCorrect": false, "rationale": "Incorrecto, no garantiza H bonding."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo saber de una lista de compuestos orgánicos cuáles tienen mayor solubilidad en agua?",
+    "options": [
+      {"text": "Los que son polares y pueden formar enlaces de hidrógeno con agua", "isCorrect": true, "rationale": "Solubilidad polar = miscibilidad con agua."},
+      {"text": "Los no polares", "isCorrect": false, "rationale": "Inmiscibles generalmente."},
+      {"text": "Los aromáticos grandes", "isCorrect": false, "rationale": "Inmiscibles con agua."},
+      {"text": "Los con solo enlaces C-C y C-H", "isCorrect": false, "rationale": "Hidrofóbicos, solubilidad baja."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los pares de electrones libres (TRePEV)?",
+    "options": [
+      {"text": "Electrones no compartidos en el átomo central", "isCorrect": true, "rationale": "Concepto básico TRePEV."},
+      {"text": "Electrones compartidos entre dos átomos", "isCorrect": false, "rationale": "Son enlaces, no pares libres."},
+      {"text": "Electrones en la capa interna", "isCorrect": false, "rationale": "Incorrecto, afectan geometría solo los externos."},
+      {"text": "Electrones que forman dipolos", "isCorrect": false, "rationale": "Confunde concepto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la estructura TRePEV con menores ángulos de enlace?",
+    "options": [
+        {"text": "Angular (o doblada)", "isCorrect": true, "rationale": "Los pares libres repelen más que los enlaces, reduciendo el ángulo a <109.5°."},
+        {"text": "Tetraédrica", "isCorrect": false, "rationale": "Ángulo estándar de 109.5°, mayor que angular con pares libres."},
+        {"text": "Lineal", "isCorrect": false, "rationale": "Ángulo = 180°, mucho mayor."},
+        {"text": "Trigonal plana", "isCorrect": false, "rationale": "Ángulo = 120°, mayor que angular."}
+    ],
+    "hint": ""
+},  
+  {
+    "question": "¿Cuál es la estructura TRePEV con mayores ángulos de enlace?",
+    "options": [
+      {"text": "Lineal", "isCorrect": true, "rationale": "Ángulo de 180°, máximo posible."},
+      {"text": "Tetraédrica", "isCorrect": false, "rationale": "Ángulo = 109.5°."},
+      {"text": "Pirámide trigonal", "isCorrect": false, "rationale": "Ángulo < 109.5°."},
+      {"text": "Trigonal plana", "isCorrect": false, "rationale": "Ángulo = 120°."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuáles geometrías son polares y cuáles no?",
+    "options": [
+      {"text": "Lineal y trigonal plana no polares si átomos iguales; angular y piramidal polares", "isCorrect": true, "rationale": "Depende de simetría y dipolos."},
+      {"text": "Todas son polares", "isCorrect": false, "rationale": "Lineal simétrica puede ser no polar."},
+      {"text": "Solo tetraédrica es polar", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Trigonal plana siempre polar", "isCorrect": false, "rationale": "Puede ser no polar con átomos iguales."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo afectan las interacciones entre enlaces a la molécula total? Ejemplos",
+    "options": [
+      {"text": "Dipolos parciales se suman para dar polaridad molecular global; H2O polar, CO2 no polar", "isCorrect": true, "rationale": "Ejemplo clásico de suma vectorial de dipolos."},
+      {"text": "Interacciones no afectan polaridad", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Solo interacciones London afectan polaridad", "isCorrect": false, "rationale": "London no determina polaridad neta."},
+      {"text": "Ángulos determinan solo punto de ebullición", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué geometría tiene ángulos de 120 grados?",
+    "options": [
+      {"text": "Trigonal plana", "isCorrect": true, "rationale": "Definición de trigonal plana."},
+      {"text": "Lineal", "isCorrect": false, "rationale": "Ángulo = 180°."},
+      {"text": "Tetraédrica", "isCorrect": false, "rationale": "Ángulo = 109.5°."},
+      {"text": "Pirámide trigonal", "isCorrect": false, "rationale": "Ángulo < 109.5°."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Indicar cuáles de estos compuestos presentan mayor solubilidad en hexano",
+    "options": [
+      {"text": "Compuestos no polares", "isCorrect": true, "rationale": "Hexano es no polar, miscibilidad con no polares."},
+      {"text": "Compuestos polares", "isCorrect": false, "rationale": "No se disuelven en hexano."},
+      {"text": "Compuestos iónicos", "isCorrect": false, "rationale": "No solubles en solvente apolar."},
+      {"text": "Compuestos que forman H", "isCorrect": false, "rationale": "H bonding con agua, no hexano."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuándo una molécula tiene alta solubilidad en agua?",
+    "options": [
+      {"text": "Cuando es polar y puede formar enlaces de hidrógeno", "isCorrect": true, "rationale": "Regla 'lo semejante disuelve lo semejante'."},
+      {"text": "Cuando es no polar", "isCorrect": false, "rationale": "No soluble en agua."},
+      {"text": "Cuando es iónica sin dipolos", "isCorrect": false, "rationale": "Iónico debe estar disuelto para solubilidad."},
+      {"text": "Cuando tiene enlaces C-H solamente", "isCorrect": false, "rationale": "Hidrofóbico, baja solubilidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Nombrar fuerzas intermoleculares",
+    "options": [
+      {"text": "Dipolo-dipolo, London, puentes de hidrógeno", "isCorrect": true, "rationale": "Principales fuerzas intermoleculares."},
+      {"text": "Enlaces covalentes y iónicos", "isCorrect": false, "rationale": "Son enlaces intramoleculares."},
+      {"text": "Fuerzas nucleares", "isCorrect": false, "rationale": "No corresponden."},
+      {"text": "Interacciones gravitacionales", "isCorrect": false, "rationale": "Muy débiles comparadas a químicas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son las fuerzas dipolo-dipolo?",
+    "options": [
+      {"text": "Atracciones entre dipolos permanentes de moléculas polares", "isCorrect": true, "rationale": "Definición clásica."},
+      {"text": "Fuerzas entre moléculas no polares", "isCorrect": false, "rationale": "Eso son London."},
+      {"text": "Enlaces covalentes fuertes", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Interacciones entre iones", "isCorrect": false, "rationale": "Eso es iónica."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son las fuerzas de London?",
+    "options": [
+      {"text": "Interacciones temporales por dipolos inducidos en moléculas", "isCorrect": true, "rationale": "También llamadas fuerzas de dispersión."},
+      {"text": "Fuerzas entre iones", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Enlaces H permanentes", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Atracciones dipolo-dipolo fijas", "isCorrect": false, "rationale": "No, London son temporales."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los puentes de hidrógeno?",
+    "options": [
+      {"text": "Atracciones entre H unido a N, O o F y un par libre de otra molécula", "isCorrect": true, "rationale": "Definición clásica de H bonding."},
+      {"text": "Cualquier enlace covalente con H", "isCorrect": false, "rationale": "No todos son puentes de H."},
+      {"text": "Interacciones London con H", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Fuerzas iónicas con H+", "isCorrect": false, "rationale": "No es el caso general."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué otras fuerzas de interacción existen además de dipolo-dipolo, London y puentes de hidrógeno?",
+    "options": [
+      {"text": "Interacciones iónicas y metálicas", "isCorrect": true, "rationale": "Ejemplos de otras fuerzas entre átomos o iones."},
+      {"text": "Solamente fuerzas gravitacionales", "isCorrect": false, "rationale": "Muy débiles, no consideradas químicas."},
+      {"text": "Enlaces covalentes", "isCorrect": false, "rationale": "Son intramoleculares, no fuerzas intermoleculares."},
+      {"text": "Fuerzas nucleares", "isCorrect": false, "rationale": "No aplican a moléculas."}
+    ],
+    "hint": ""
+  },
+  {
+  "question": "¿Por qué un compuesto con un átomo grande puede tener más fuerza de interacción que uno pequeño con más interacciones, como I2 vs H2O?",
+  "options": [
+    {"text": "Porque átomos grandes tienen electrones más polarizables y fuerzas de London más fuertes; en la práctica, el efecto domina si el tamaño es >3 veces mayor que el pequeño", "isCorrect": true, "rationale": "Aunque H2O tiene H-bonding, la polarizabilidad de I2 y la gran nube electrónica genera fuerzas de dispersión mayores, aumentando su punto de ebullición."},
+    {"text": "Porque es polar", "isCorrect": false, "rationale": "H2O es polar, pero I2 sigue teniendo P. eb mayor por London."},
+    {"text": "Porque es más ligero", "isCorrect": false, "rationale": "Incorrecto, la masa no determina la fuerza de dispersión."},
+    {"text": "Porque tiene enlaces H", "isCorrect": false, "rationale": "H2O sí los tiene, pero su efecto no supera la polarizabilidad de I2."}
+  ],
+  "hint": ""
+},
+  {
+    "question": "¿Cómo se sabe el ángulo aproximado de un enlace?",
+    "options": [
+      {"text": "Usando la geometría molecular y TRePEV considerando pares enlazantes y libres", "isCorrect": true, "rationale": "Método estándar TRePEV."},
+      {"text": "Midiendo masa molar", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Observando polaridad", "isCorrect": false, "rationale": "No determina ángulo."},
+      {"text": "Usando punto de ebullición", "isCorrect": false, "rationale": "No tiene relación."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Nombre la o las especies que presentan geometría piramidal según TRePEV: a: AlCl3; b: NO3-; c: NH3",
+    "options": [
+      {"text": "NH3", "isCorrect": true, "rationale": "NH3 es pirámide trigonal; AlCl3 trigonal plana, NO3- también trigonal plana."},
+      {"text": "AlCl3", "isCorrect": false, "rationale": "Trigonal plana, no piramidal."},
+      {"text": "NO3-", "isCorrect": false, "rationale": "Trigonal plana, no piramidal."},
+      {"text": "AlCl3 y NO3-", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  }
+]
+
+
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionData.options.sort(
+                () => Math.random() - 0.5
+            )
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

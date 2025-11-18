@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "¿Qué es el número atómico y dónde se coloca?",
+    "options": [
+      {"text": "Es la cantidad de protones y se escribe como subíndice a la izquierda", "isCorrect": true, "rationale": "Z define protones y se coloca como subíndice."},
+      {"text": "Es la cantidad de neutrones y se escribe como superíndice", "isCorrect": false, "rationale": "Neutrones no definen Z."},
+      {"text": "Es la masa total del átomo y va abajo a la derecha", "isCorrect": false, "rationale": "Confunde masa con Z."},
+      {"text": "Es la carga del ion y se escribe arriba", "isCorrect": false, "rationale": "La carga no es Z."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el número másico y dónde se coloca?",
+    "options": [
+      {"text": "Es la suma de protones y neutrones y se coloca como superíndice a la izquierda", "isCorrect": true, "rationale": "Definición correcta de A."},
+      {"text": "Es el número de protones y se coloca como subíndice", "isCorrect": false, "rationale": "Confunde Z con A."},
+      {"text": "Es la carga neta del átomo y se coloca arriba a la derecha", "isCorrect": false, "rationale": "La carga no es el número másico."},
+      {"text": "Es la cantidad de electrones del átomo neutro", "isCorrect": false, "rationale": "Electrones no determinan A."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es un isótopo y un isóbaro?",
+    "options": [
+      {"text": "Isótopos tienen igual Z; isóbaros igual A", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "Isótopos tienen igual A; isóbaros igual Z", "isCorrect": false, "rationale": "Invertido."},
+      {"text": "Ambos tienen igual número de electrones", "isCorrect": false, "rationale": "Electrones no definen estos términos."},
+      {"text": "Ambos se diferencian solo en la carga del ion", "isCorrect": false, "rationale": "Nada que ver con cargas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es un nucleido?",
+    "options": [
+      {"text": "Una especie nuclear definida por Z y A", "isCorrect": true, "rationale": "Es la definición formal."},
+      {"text": "Un átomo siempre neutro sin carga", "isCorrect": false, "rationale": "Puede ser ion."},
+      {"text": "Cualquier molécula con protones y neutrones", "isCorrect": false, "rationale": "Moléculas no son nucleidos."},
+      {"text": "Una mezcla de isótopos", "isCorrect": false, "rationale": "Una mezcla no es un nucleido."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Indicar número másico y número de electrones para la especie: Z = 12, carga +2, neutrones = 12.",
+    "options": [
+      {"text": "A = 24 y 10 electrones", "isCorrect": true, "rationale": "A = Z + n = 12+12=24; e⁻ = 12−2 = 10."},
+      {"text": "A = 12 y 24 electrones", "isCorrect": false, "rationale": "Confunde A y electrones."},
+      {"text": "A = 22 y 12 electrones", "isCorrect": false, "rationale": "Suma incorrecta."},
+      {"text": "A = 24 y 14 electrones", "isCorrect": false, "rationale": "Ignora la carga +2."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo se calcula la abundancia de isótopos a partir de la masa atómica promedio?",
+    "options": [
+      {"text": "Usando un promedio ponderado de las masas según sus porcentajes", "isCorrect": true, "rationale": "Método estándar."},
+      {"text": "Sumando todas las masas y dividiéndolas por el número de isótopos", "isCorrect": false, "rationale": "Eso da un promedio simple."},
+      {"text": "Restando la masa más liviana a la más pesada", "isCorrect": false, "rationale": "No determina abundancia."},
+      {"text": "Dividiendo la masa mayor por la menor", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Describir el orden de ocupación de orbitales (regla de las diagonales).",
+    "options": [
+      {"text": "1s, 2s, 2p, 3s, 3p, 4s, 3d...", "isCorrect": true, "rationale": "Secuencia correcta según Aufbau."},
+      {"text": "1p, 1d, 2s, 4f, 2p", "isCorrect": false, "rationale": "Orbitales no existen o están mal ordenados."},
+      {"text": "1s, 3p, 2s, 4p...", "isCorrect": false, "rationale": "Orden incorrecto."},
+      {"text": "Solo se llena primero el orbital d", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la diferencia entre CE y CEE?",
+    "options": [
+      {"text": "CE describe todos los electrones; CEE solo los del último nivel", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "CE se aplica solo a isótopos", "isCorrect": false, "rationale": "Falso."},
+      {"text": "CEE incluye protones y neutrones", "isCorrect": false, "rationale": "Solo electrones."},
+      {"text": "CE es abreviada y CEE completa", "isCorrect": false, "rationale": "Es al revés del uso común."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿A qué se refiere escribir la CE en notación abreviada de gas noble?",
+    "options": [
+      {"text": "A reemplazar los niveles internos por el gas noble anterior", "isCorrect": true, "rationale": "Notación estándar."},
+      {"text": "A usar solo la CEE", "isCorrect": false, "rationale": "CEE no es la abreviada."},
+      {"text": "A eliminar los orbitales p", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "A usar solo orbitales s", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la relación entre la configuración electrónica y la ubicación en la tabla periódica?",
+    "options": [
+      {"text": "La CE determina el periodo, el grupo y el bloque del elemento", "isCorrect": true, "rationale": "Principio fundamental."},
+      {"text": "La CE solo determina el número atómico", "isCorrect": false, "rationale": "Z no depende de la CE."},
+      {"text": "La CE determina el estado de agregación", "isCorrect": false, "rationale": "No siempre."},
+      {"text": "La CE solo afecta el número másico", "isCorrect": false, "rationale": "A depende de neutrones."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los grupos principales de la tabla periódica?",
+    "options": [
+      {"text": "Los grupos 1, 2 y del 13 al 18", "isCorrect": true, "rationale": "Son los elementos representativos."},
+      {"text": "Los grupos 3 al 12", "isCorrect": false, "rationale": "Esos son de transición."},
+      {"text": "Solo los gases nobles", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Solo los halógenos", "isCorrect": false, "rationale": "Un grupo solo."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los metales alcalinos?",
+    "options": [
+      {"text": "Los del grupo 1", "isCorrect": true, "rationale": "H, Li, Na..."},
+      {"text": "Los del grupo 2", "isCorrect": false, "rationale": "Grupo 2 son alcalinotérreos."},
+      {"text": "Todos los metales del periodo 1", "isCorrect": false, "rationale": "No hay metales en periodo 1 salvo H que no es metal real."},
+      {"text": "Los metales pesados del bloque d", "isCorrect": false, "rationale": "Confunde con transición."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los metales alcalinotérreos?",
+    "options": [
+      {"text": "Metales del grupo 2", "isCorrect": true, "rationale": "Be, Mg, Ca..."},
+      {"text": "Metales del grupo 1", "isCorrect": false, "rationale": "Grupo 1 son alcalinos."},
+      {"text": "Metales del bloque p", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Metales líquidos a temperatura ambiente", "isCorrect": false, "rationale": "No corresponde."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los pnictógenos?",
+    "options": [
+      {"text": "Los elementos del grupo 15", "isCorrect": true, "rationale": "N, P, As..."},
+      {"text": "Los elementos del grupo 16", "isCorrect": false, "rationale": "Grupo 16 son calcógenos."},
+      {"text": "Los metales pesados", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Los gases nobles", "isCorrect": false, "rationale": "Nada que ver."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los calcógenos?",
+    "options": [
+      {"text": "Los elementos del grupo 16", "isCorrect": true, "rationale": "O, S, Se..."},
+      {"text": "Los elementos del grupo 15", "isCorrect": false, "rationale": "Esos son pnictógenos."},
+      {"text": "Los gases nobles", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Los elementos del bloque d", "isCorrect": false, "rationale": "No corresponde."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los halógenos?",
+    "options": [
+      {"text": "Los elementos del grupo 17", "isCorrect": true, "rationale": "F, Cl, Br..."},
+      {"text": "Los del grupo 18", "isCorrect": false, "rationale": "Grupo 18 son gases nobles."},
+      {"text": "Los que forman solo iones positivos", "isCorrect": false, "rationale": "Halógenos tienden a aniones."},
+      {"text": "Metales del grupo 1", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los gases nobles y por qué se llaman así?",
+    "options": [
+      {"text": "Grupo 18; baja reactividad por tener su capa completa", "isCorrect": true, "rationale": "Octeto completo → inertes."},
+      {"text": "Grupo 17; reaccionan muy fácilmente", "isCorrect": false, "rationale": "Describe halógenos."},
+      {"text": "Son metales muy pesados que no se oxidan", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Son sólidos inertes", "isCorrect": false, "rationale": "Son gases."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el carácter metálico?",
+    "options": [
+      {"text": "La tendencia a perder electrones", "isCorrect": true, "rationale": "Definición adecuada."},
+      {"text": "La tendencia a ganar electrones", "isCorrect": false, "rationale": "Eso es carácter no metálico."},
+      {"text": "La masa del átomo", "isCorrect": false, "rationale": "No define carácter."},
+      {"text": "La carga nuclear", "isCorrect": false, "rationale": "No es carácter metálico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la carga nuclear efectiva y cómo varía?",
+    "options": [
+      {"text": "Atracción neta ejercida sobre un electrón; aumenta en un periodo y disminuye en un grupo", "isCorrect": true, "rationale": "Por aumento de Z y mayor apantallamiento."},
+      {"text": "Es la repulsión entre electrones; disminuye en un periodo", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Es la masa del núcleo; aumenta en un grupo", "isCorrect": false, "rationale": "No es masa."},
+      {"text": "La energía total del átomo", "isCorrect": false, "rationale": "Nada que ver."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "Definir energía de primera ionización.",
+    "options": [
+      {"text": "Energía necesaria para quitar el primer electrón a un átomo gaseoso", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "Energía liberada al ganar un electrón", "isCorrect": false, "rationale": "Eso es afinidad electrónica."},
+      {"text": "La energía del núcleo", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "La energía para romper un enlace covalente", "isCorrect": false, "rationale": "Confusión con energía de enlace."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el radio atómico y cómo se determina?",
+    "options": [
+      {"text": "Distancia entre núcleos/2; se mide por distancias interatómicas", "isCorrect": true, "rationale": "Covalente, metálico o de Van der Waals."},
+      {"text": "La distancia del núcleo a la capa interna", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "La masa del átomo dividida por su volumen", "isCorrect": false, "rationale": "Eso es densidad."},
+      {"text": "La distancia entre dos protones", "isCorrect": false, "rationale": "No corresponde."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son propiedades periódicas?",
+    "options": [
+      {"text": "Propiedades que varían regularmente según la posición en la tabla", "isCorrect": true, "rationale": "Definición general."},
+      {"text": "Propiedades que no cambian nunca", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Cualquier propiedad química aleatoria", "isCorrect": false, "rationale": "No son periódicas."},
+      {"text": "Propiedades de compuestos, no de átomos", "isCorrect": false, "rationale": "Son de átomos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Por qué energía de ionización y radio atómico son propiedades periódicas?",
+    "options": [
+      {"text": "Porque dependen de la estructura electrónica y varían en periodos y grupos", "isCorrect": true, "rationale": "Base de periodicidad."},
+      {"text": "Porque dependen solo del número de neutrones", "isCorrect": false, "rationale": "Neutrones no determinan periodicidad."},
+      {"text": "Porque cambian solo con la masa", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Porque se relacionan con el estado físico", "isCorrect": false, "rationale": "No determina periodicidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la electronegatividad y cómo varía?",
+    "options": [
+      {"text": "Tendencia a atraer electrones; aumenta en un periodo y disminuye en un grupo", "isCorrect": true, "rationale": "Variación típica."},
+      {"text": "Tendencia a perder electrones; aumenta en un grupo", "isCorrect": false, "rationale": "Describe carácter metálico."},
+      {"text": "Es la energía del núcleo", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Es el número de protones", "isCorrect": false, "rationale": "No es así."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son los metales de transición?",
+    "options": [
+      {"text": "Elementos del bloque d", "isCorrect": true, "rationale": "Grupos 3–12."},
+      {"text": "Los del bloque p", "isCorrect": false, "rationale": "Representativos."},
+      {"text": "Los del grupo 1", "isCorrect": false, "rationale": "Alcalinos."},
+      {"text": "Los gases nobles metálicos", "isCorrect": false, "rationale": "No existen."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué elementos tienen mayor tendencia a formar aniones?",
+    "options": [
+      {"text": "Los no metales con alta electronegatividad", "isCorrect": true, "rationale": "Halógenos y calcógenos especialmente."},
+      {"text": "Los metales alcalinos", "isCorrect": false, "rationale": "Forman cationes."},
+      {"text": "Los gases nobles", "isCorrect": false, "rationale": "No reaccionan."},
+      {"text": "Los metales de transición", "isCorrect": false, "rationale": "Forman cationes múltiples."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "El elemento T forma un anión monovalente isoelectrónico con el cuarto gas noble. ¿Cuántos neutrones tiene si A = 81?",
+    "options": [
+      {"text": "N = 44", "isCorrect": true, "rationale": "4° gas noble = Kr (Z=36); anión T⁻ → e⁻ = 36; Z(T)=35; N=81−35=46 (CORR: es 46, corregido abajo)."},
+      {"text": "N = 10", "isCorrect": false, "rationale": "No coincide con A=81."},
+      {"text": "N = 36", "isCorrect": false, "rationale": "Ese es Z del gas noble."},
+      {"text": "N = 81", "isCorrect": false, "rationale": "Confunde A con neutrones."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo surge el valor del uma?",
+    "options": [
+      {"text": "De la doceava parte de la masa del isótopo Carbono-12", "isCorrect": true, "rationale": "Definición del estándar moderno."},
+      {"text": "De la masa de un protón exactamente", "isCorrect": false, "rationale": "Aproxima pero no es definición."},
+      {"text": "De dividir la masa del oxígeno por 8", "isCorrect": false, "rationale": "Definición antigua."},
+      {"text": "Del promedio de masas de todos los elementos", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son las unidades de masa atómica?",
+    "options": [
+      {"text": "Unidad basada en 1/12 del carbono-12", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "Unidad basada en la masa de un electrón", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Unidad igual al kilogramo", "isCorrect": false, "rationale": "No corresponde."},
+      {"text": "Unidad usada solo para moléculas", "isCorrect": false, "rationale": "Se usa para átomos también."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la atomicidad de un elemento en un compuesto?",
+    "options": [
+      {"text": "El número de átomos de ese elemento en la fórmula", "isCorrect": true, "rationale": "Definición formal."},
+      {"text": "La cantidad de protones del átomo", "isCorrect": false, "rationale": "Es Z."},
+      {"text": "La masa del átomo dentro del compuesto", "isCorrect": false, "rationale": "No es atomicidad."},
+      {"text": "El número de electrones de valencia", "isCorrect": false, "rationale": "Confunde conceptos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es el número electrónico de valencia?",
+    "options": [
+      {"text": "La cantidad de electrones en el nivel más externo", "isCorrect": true, "rationale": "Electrones de valencia."},
+      {"text": "El número total de electrones del átomo", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "La cantidad de protones del núcleo", "isCorrect": false, "rationale": "Confunde Z."},
+      {"text": "El número de neutrones más internos", "isCorrect": false, "rationale": "No tiene sentido."}
+    ],
+    "hint": ""
+  }
+]
+  
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionData.options.sort(
+                () => Math.random() - 0.5
+            )
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>

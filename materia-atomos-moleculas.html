@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario de Biología Celular y Biomoléculas</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter para una mejor legibilidad */
+        body { 
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Un verde muy claro */
+        }
+        /* Estilo para el contenedor principal del quiz */
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Bordes más redondeados */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Sombra suave */
+            padding: 2.5rem;
+            max-width: 800px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Estilo para las preguntas */
+        .question-text {
+            font-size: 1.5rem; /* Texto de pregunta más grande */
+            font-weight: 600; /* Semibold */
+            color: #1f2937; /* Gris oscuro */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        /* Contenedor para las opciones */
+        .options-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Espacio entre opciones */
+        }
+        /* Estilo base para los botones de opción */
+        .option-button {
+            background-color: #e0f2f7; /* Azul claro */
+            color: #1f2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem; /* Bordes redondeados */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            text-align: left;
+            border: 1px solid #a7d9ed; /* Borde sutil */
+            font-size: 1.1rem;
+        }
+        /* Efecto hover para los botones de opción */
+        .option-button:hover {
+            background-color: #b3e0f2; /* Azul más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        /* Estilos para opciones correctas e incorrectas */
+        .option-button.correct {
+            background-color: #d1fae5; /* Verde para respuesta correcta */
+            border-color: #34d399;
+        }
+        .option-button.incorrect {
+            background-color: #fee2e2; /* Rojo para respuesta incorrecta */
+            border-color: #ef4444;
+        }
+        /* Estilo para el botón de siguiente pregunta */
+        .next-button {
+            background-color: #10b981; /* Verde esmeralda */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .next-button:hover {
+            background-color: #059669; /* Verde más oscuro al pasar el ratón */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de feedback */
+        .feedback-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .feedback-message.correct {
+            color: #059669; /* Verde para feedback correcto */
+        }
+        .feedback-message.incorrect {
+            color: #dc2626; /* Rojo para feedback incorrecto */
+        }
+        /* Estilo para la pantalla de resultados */
+        .results-screen {
+            text-align: center;
+            padding: 2rem;
+        }
+        .results-screen h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .results-screen p {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+        /* Estilo para el botón de reiniciar quiz */
+        .restart-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            border: none;
+        }
+        .restart-button:hover {
+            background-color: #2563eb; /* Azul más oscuro */
+            transform: translateY(-2px);
+        }
+        /* Estilo para el mensaje de pista */
+        .hint-text {
+            font-style: italic;
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-app" class="quiz-container">
+        <!-- Contenedor para la pregunta actual -->
+        <div id="question-display">
+            <p id="question-text" class="question-text"></p>
+            <div id="options-container" class="options-container">
+                <!-- Las opciones se insertarán aquí dinámicamente -->
+            </div>
+            <p id="feedback-message" class="feedback-message"></p>
+            <p id="hint-text" class="hint-text"></p>
+            <button id="next-button" class="next-button">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Contenedor para la pantalla de resultados (inicialmente oculto) -->
+        <div id="results-screen" class="results-screen hidden">
+            <h2>¡Cuestionario Completado!</h2>
+            <p>Tu puntuación final es: <span id="final-score"></span> de <span id="total-questions"></span></p>
+            <button id="restart-button" class="restart-button">Reiniciar Cuestionario</button>
+        </div>
+    </div>
+
+    <script>
+        // Array de objetos que contiene las preguntas del quiz.
+        // Cada objeto tiene:
+        // - question: el texto de la pregunta.
+        // - options: un array de objetos, cada uno con el texto de la opción y un booleano 'isCorrect'.
+        // - hint: una pista para la pregunta.
+        // - rationale: la explicación de por qué una respuesta es correcta/incorrecta.
+        const quizQuestions = [
+  {
+    "question": "¿Qué es un sistema homogéneo y cuántos componentes puede tener como máximo?",
+    "options": [
+      {"text": "Es un sistema con dos fases pero un solo componente", "isCorrect": false, "rationale": "Dos fases implica heterogeneidad."},
+      {"text": "Es un sistema formado por una sola fase y puede tener varios componentes", "isCorrect": true, "rationale": "La homogeneidad depende de la fase, no del número de componentes."},
+      {"text": "Es un sistema con una sola sustancia pura siempre", "isCorrect": false, "rationale": "Puede ser mezcla homogénea."},
+      {"text": "Es un sistema con propiedades extensivas constantes", "isCorrect": false, "rationale": "La condición usa propiedades intensivas."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es una fase?",
+    "options": [
+      {"text": "La cantidad de componentes en un sistema", "isCorrect": false, "rationale": "Componentes y fases no son equivalentes."},
+      {"text": "Cada parte homogénea del sistema físicamente separable", "isCorrect": true, "rationale": "Definición correcta de fase."},
+      {"text": "El número de sustancias puras presentes", "isCorrect": false, "rationale": "Define componentes, no fases."},
+      {"text": "Una propiedad intensiva del sistema", "isCorrect": false, "rationale": "Una fase no es una propiedad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué es la densidad?",
+    "options": [
+      {"text": "La relación entre masa y volumen", "isCorrect": true, "rationale": "Definición formal de densidad."},
+      {"text": "La energía que almacena un cuerpo por unidad de masa", "isCorrect": false, "rationale": "Confusión con energía específica."},
+      {"text": "La cantidad de sustancia por unidad de volumen", "isCorrect": false, "rationale": "Eso define concentración."},
+      {"text": "El peso por unidad de volumen", "isCorrect": false, "rationale": "Eso define peso específico."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿La densidad es una propiedad extensiva? ¿Por qué?",
+    "options": [
+      {"text": "Sí, porque depende de la masa total", "isCorrect": false, "rationale": "Extensivas dependen del tamaño; la densidad no."},
+      {"text": "No, porque no cambia con la cantidad de sustancia", "isCorrect": true, "rationale": "La densidad es intensiva."},
+      {"text": "Sí, porque cambia con el volumen del sistema", "isCorrect": false, "rationale": "La densidad no varía por dividir el sistema."},
+      {"text": "No, porque depende del número de componentes", "isCorrect": false, "rationale": "Incorrecto: depende de T y P."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Qué son las propiedades extensivas e intensivas?",
+    "options": [
+      {"text": "Extensivas dependen de la cantidad; intensivas no", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "Extensivas dependen de la temperatura; intensivas de la masa", "isCorrect": false, "rationale": "Confusión de conceptos."},
+      {"text": "Ambas dependen del volumen del sistema", "isCorrect": false, "rationale": "Solo las extensivas dependen del tamaño."},
+      {"text": "Intensivas dependen del tamaño; extensivas de la composición", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Una sustancia siempre presenta menor densidad en estado gaseoso que en estado sólido?",
+    "options": [
+      {"text": "Sí, siempre", "isCorrect": false, "rationale": "El hielo es menos denso que el agua líquida."},
+      {"text": "No, existen excepciones como el agua", "isCorrect": true, "rationale": "Ejemplo: hielo flota en agua."},
+      {"text": "Solo si está a presión constante", "isCorrect": false, "rationale": "La excepción no depende de presión normal."},
+      {"text": "Solo si es un gas noble", "isCorrect": false, "rationale": "No tiene relación."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Una fase puede ser heterogénea?",
+    "options": [
+      {"text": "Sí, si tiene varios componentes", "isCorrect": false, "rationale": "Heterogeneidad no depende de componentes."},
+      {"text": "No, una fase es siempre homogénea", "isCorrect": true, "rationale": "Es la definición de fase."},
+      {"text": "Sí, si sus propiedades extensivas cambian", "isCorrect": false, "rationale": "La fase se define por propiedades intensivas."},
+      {"text": "Sí, si cambia con la temperatura", "isCorrect": false, "rationale": "Confunde cambios de fase."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Un sistema heterogéneo puede tener un solo componente?",
+    "options": [
+      {"text": "Sí, si presenta más de una fase", "isCorrect": true, "rationale": "Ej.: agua + hielo (1 componente, 2 fases)."},
+      {"text": "No, porque requiere varias sustancias", "isCorrect": false, "rationale": "Incorrecto: confunde componente con fase."},
+      {"text": "No, siempre necesita dos componentes", "isCorrect": false, "rationale": "Error conceptual."},
+      {"text": "Solo si cambia de estado químico", "isCorrect": false, "rationale": "La heterogeneidad no requiere reacción química."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Átomo y elemento tienen distinto significado?",
+    "options": [
+      {"text": "Sí, átomo es la unidad mínima; elemento es un conjunto de átomos iguales", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "No, significan lo mismo", "isCorrect": false, "rationale": "Error conceptual."},
+      {"text": "Sí, átomo es mezcla y elemento es sustancia", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "No, ambos representan un mismo compuesto", "isCorrect": false, "rationale": "Confunde elementos con compuestos."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Átomo y elemento significan lo mismo?",
+    "options": [
+      {"text": "No, un elemento está formado por átomos del mismo tipo", "isCorrect": true, "rationale": "Diferencia correcta entre ambos."},
+      {"text": "Sí, ambos describen una molécula", "isCorrect": false, "rationale": "Confunde con moléculas."},
+      {"text": "Sí, siempre que estén en estado gaseoso", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "No, el átomo es una mezcla de sustancias", "isCorrect": false, "rationale": "Error conceptual."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿La densidad y el punto de fusión son propiedades intensivas?",
+    "options": [
+      {"text": "Sí, ambas no dependen de la cantidad de materia", "isCorrect": true, "rationale": "Correcto."},
+      {"text": "No, ambas dependen del volumen", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Sí, pero solo la densidad es intensiva", "isCorrect": false, "rationale": "El punto de fusión también es intensivo."},
+      {"text": "No, las dos son extensivas", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿En qué consiste la Teoría Cinética de la Materia?",
+    "options": [
+      {"text": "En que las partículas están en movimiento constante", "isCorrect": true, "rationale": "Idea central de la teoría cinética."},
+      {"text": "En que la materia no tiene energía interna", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "En que los sólidos no poseen movimiento molecular", "isCorrect": false, "rationale": "Movimiento vibratorio siempre existe."},
+      {"text": "En que la materia cambia su composición al calentarse", "isCorrect": false, "rationale": "Describe reacciones, no teoría cinética."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cómo se denominan los cambios de estado de la materia?",
+    "options": [
+      {"text": "Fusión, solidificación, vaporización, condensación, sublimación", "isCorrect": true, "rationale": "Lista completa y correcta."},
+      {"text": "Evaporación, combustión y disolución", "isCorrect": false, "rationale": "Incluye procesos no físicos."},
+      {"text": "Sublimación y ebullición solamente", "isCorrect": false, "rationale": "Listado incompleto."},
+      {"text": "Condensación y precipitación solamente", "isCorrect": false, "rationale": "Procesos distintos a cambios de estado."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la diferencia entre evaporación y vaporización?",
+    "options": [
+      {"text": "La evaporación es superficial; la vaporización puede ser ebullición", "isCorrect": true, "rationale": "Diferencia correcta."},
+      {"text": "La vaporización es más lenta que la evaporación", "isCorrect": false, "rationale": "Es al revés (ebullición es rápida)."},
+      {"text": "La evaporación solo ocurre a 100°C", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Son exactamente el mismo proceso", "isCorrect": false, "rationale": "No son equivalentes."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿En qué se diferencian las sustancias simples de las compuestas?",
+    "options": [
+      {"text": "Las simples tienen un elemento; las compuestas más de uno", "isCorrect": true, "rationale": "Definición correcta."},
+      {"text": "Las simples están en estado sólido y las compuestas en líquido", "isCorrect": false, "rationale": "Estado no define la sustancia."},
+      {"text": "Las compuestas no pueden separarse", "isCorrect": false, "rationale": "Sí pueden por métodos químicos."},
+      {"text": "Las simples son mezclas", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Un sistema homogéneo siempre presenta una fase y un componente?",
+    "options": [
+      {"text": "No, puede tener varios componentes", "isCorrect": true, "rationale": "Ej.: soluciones."},
+      {"text": "Sí, porque si tiene dos componentes es heterogéneo", "isCorrect": false, "rationale": "Los componentes no definen homogeneidad."},
+      {"text": "Sí, solo si está a presión constante", "isCorrect": false, "rationale": "La presión no define fases."},
+      {"text": "No, un sistema homogéneo nunca tiene fases", "isCorrect": false, "rationale": "Absurdamente incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Una sustancia siempre presenta menor densidad en estado gaseoso que sólido?",
+    "options": [
+      {"text": "No, existen excepciones como el agua", "isCorrect": true, "rationale": "Caso del hielo."},
+      {"text": "Sí, siempre", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Solo si está a presión muy baja", "isCorrect": false, "rationale": "La excepción no depende de presión."},
+      {"text": "Solo si es un metal", "isCorrect": false, "rationale": "Sin fundamento."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Un sistema es homogéneo cuando sus propiedades extensivas son las mismas en cualquier porción del volumen?",
+    "options": [
+      {"text": "No, debe tener propiedades intensivas iguales", "isCorrect": true, "rationale": "La homogeneidad se define por propiedades intensivas."},
+      {"text": "Sí, es la definición correcta", "isCorrect": false, "rationale": "Confunde intensivas con extensivas."},
+      {"text": "Sí, pero solo si es una mezcla simple", "isCorrect": false, "rationale": "Depende de fases, no de tipo de mezcla."},
+      {"text": "No, depende del número de componentes", "isCorrect": false, "rationale": "Componentes no definen homogeneidad."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Un sistema es homogéneo cuando sus propiedades intensivas son iguales en cualquier punto?",
+    "options": [
+      {"text": "Sí, esta es la definición correcta", "isCorrect": true, "rationale": "Homogeneidad = intensivas constantes."},
+      {"text": "No, depende del número de fases", "isCorrect": false, "rationale": "Las fases son consecuencia, no causa."},
+      {"text": "No, depende solo de la masa total", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Sí, pero solo si tiene un componente", "isCorrect": false, "rationale": "Puede tener varios componentes."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿Cuál es la fórmula de la densidad cuando presión y temperatura varían?",
+    "options": [
+      {"text": "ρ = m / V", "isCorrect": true, "rationale": "La fórmula no cambia; lo que cambia es el valor de V a T y P dadas."},
+      {"text": "ρ = P · V", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "ρ = m / (P·T)", "isCorrect": false, "rationale": "Invento incorrecto."},
+      {"text": "ρ = P / m", "isCorrect": false, "rationale": "Incorrecto."}
+    ],
+    "hint": ""
+  },
+  {
+    "question": "¿La densidad depende de la presión?",
+    "options": [
+      {"text": "Sí, especialmente en gases", "isCorrect": true, "rationale": "Los gases son compresibles; densidad cambia notablemente."},
+      {"text": "No, nunca", "isCorrect": false, "rationale": "Incorrecto."},
+      {"text": "Solo en líquidos", "isCorrect": false, "rationale": "Líquidos casi no varían."},
+      {"text": "Depende solo de la temperatura", "isCorrect": false, "rationale": "Ambas influyen, especialmente P en gases."}
+    ],
+    "hint": ""
+  }
+]
+
+
+quizQuestions.sort(
+() => Math.random() - 0.5
+)
+console.log(quizQuestions)
+        let currentQuestionIndex = 0; // Índice de la pregunta actual
+        let score = 0; // Puntuación del usuario
+        let selectedOption = null; // Opción seleccionada por el usuario
+        let quizCompleted = false; // Bandera para indicar si el quiz ha terminado
+
+        // Obtener referencias a los elementos del DOM
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackMessageElement = document.getElementById('feedback-message');
+        const hintTextElement = document.getElementById('hint-text');
+        const nextButton = document.getElementById('next-button');
+        const questionDisplay = document.getElementById('question-display');
+        const resultsScreen = document.getElementById('results-screen');
+        const finalScoreElement = document.getElementById('final-score');
+        const totalQuestionsElement = document.getElementById('total-questions');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Muestra la pregunta actual y sus opciones.
+         */
+        function displayQuestion() {
+            // Oculta la pantalla de resultados y muestra la de preguntas
+            resultsScreen.classList.add('hidden');
+            questionDisplay.classList.remove('hidden');
+
+            const questionData = quizQuestions[currentQuestionIndex];
+            questionData.options.sort(
+                () => Math.random() - 0.5
+            )
+            questionTextElement.textContent = questionData.question; // Muestra el texto de la pregunta
+            optionsContainer.innerHTML = ''; // Limpia las opciones anteriores
+            feedbackMessageElement.textContent = ''; // Limpia el mensaje de feedback
+            hintTextElement.textContent = `Pista: ${questionData.hint}`; // Muestra la pista
+            nextButton.style.display = 'none'; // Oculta el botón 'Siguiente' hasta que se responda
+
+            // Crea y añade los botones de opción para cada respuesta posible
+            questionData.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add('option-button');
+                button.dataset.index = index; // Almacena el índice de la opción
+                button.addEventListener('click', selectOption); // Añade el evento click
+                optionsContainer.appendChild(button);
+            });
+            selectedOption = null; // Reinicia la opción seleccionada
+        }
+
+        /**
+         * Maneja la selección de una opción por parte del usuario.
+         * @param {Event} event - El evento de click.
+         */
+        function selectOption(event) {
+            // Si ya se ha seleccionado una opción o el quiz ha terminado, no hacer nada.
+            if (selectedOption !== null || quizCompleted) return;
+
+            const selectedButton = event.target;
+            const selectedIndex = parseInt(selectedButton.dataset.index);
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const isCorrect = currentQuestion.options[selectedIndex].isCorrect;
+
+            selectedOption = selectedIndex; // Guarda la opción seleccionada
+
+            // Deshabilita todos los botones de opción para evitar múltiples selecciones
+            Array.from(optionsContainer.children).forEach(button => {
+                button.disabled = true;
+            });
+
+            // Aplica estilos visuales y muestra feedback
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                feedbackMessageElement.textContent = '¡Correcto!';
+                feedbackMessageElement.classList.remove('incorrect');
+                feedbackMessageElement.classList.add('correct');
+                score++; // Incrementa la puntuación si es correcta
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackMessageElement.textContent = `Incorrecto. La respuesta correcta era: ${currentQuestion.options.find(opt => opt.isCorrect).text}. Razón: ${currentQuestion.options[selectedIndex].rationale}`;
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                // Resalta la respuesta correcta si el usuario se equivocó
+                optionsContainer.children[currentQuestion.options.findIndex(opt => opt.isCorrect)].classList.add('correct');
+            }
+
+            nextButton.style.display = 'block'; // Muestra el botón 'Siguiente'
+        }
+
+        /**
+         * Avanza a la siguiente pregunta o muestra los resultados finales.
+         */
+        function nextQuestion() {
+            // Si no se ha seleccionado una opción, no se puede avanzar.
+            if (selectedOption === null && !quizCompleted) {
+                feedbackMessageElement.textContent = 'Por favor, selecciona una opción antes de continuar.';
+                feedbackMessageElement.classList.remove('correct');
+                feedbackMessageElement.classList.add('incorrect');
+                return;
+            }
+
+            currentQuestionIndex++; // Avanza al siguiente índice de pregunta
+
+            if (currentQuestionIndex < quizQuestions.length) {
+                displayQuestion(); // Si hay más preguntas, muestra la siguiente
+            } else {
+                showResults(); // Si no hay más preguntas, muestra los resultados
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados finales.
+         */
+        function showResults() {
+            quizCompleted = true; // Marca el quiz como completado
+            questionDisplay.classList.add('hidden'); // Oculta la pantalla de preguntas
+            resultsScreen.classList.remove('hidden'); // Muestra la pantalla de resultados
+            finalScoreElement.textContent = score; // Muestra la puntuación final
+            totalQuestionsElement.textContent = quizQuestions.length; // Muestra el total de preguntas
+        }
+
+        /**
+         * Reinicia el quiz a su estado inicial.
+         */
+        function restartQuiz() {
+            currentQuestionIndex = 0; // Reinicia el índice de pregunta
+            score = 0; // Reinicia la puntuación
+            quizCompleted = false; // Reinicia la bandera de quiz completado
+            displayQuestion(); // Muestra la primera pregunta
+        }
+
+        // Asigna los eventos a los botones
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Inicia el quiz mostrando la primera pregunta al cargar la página
+        displayQuestion();
+    </script>
+</body>
+</html>
